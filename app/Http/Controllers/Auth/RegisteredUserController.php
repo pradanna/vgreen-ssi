@@ -37,10 +37,20 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
+        // Ensure default role exists if table is present
+        if (\Illuminate\Support\Facades\Schema::hasTable('m_roles')) {
+            \App\Models\Role::firstOrCreate(
+                ['id' => 'VGREEN_REP'],
+                ['name' => 'Perwakilan V-Green', 'description' => 'Default client role']
+            );
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role_id' => 'VGREEN_REP',
+            'organization' => 'V-Green',
         ]);
 
         event(new Registered($user));

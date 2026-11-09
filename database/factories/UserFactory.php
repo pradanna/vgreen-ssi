@@ -24,11 +24,21 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // Ensure default role exists in test database
+        if (\Illuminate\Support\Facades\Schema::hasTable('m_roles')) {
+            \App\Models\Role::firstOrCreate(
+                ['id' => 'VGREEN_REP'],
+                ['name' => 'Perwakilan V-Green', 'description' => 'Default test role']
+            );
+        }
+
         return [
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role_id' => 'VGREEN_REP',
+            'organization' => 'V-Green',
             'remember_token' => Str::random(10),
         ];
     }
