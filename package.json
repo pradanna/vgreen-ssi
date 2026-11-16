@@ -7,10 +7,12 @@
         "dev": "vite"
     },
     "devDependencies": {
+        "@googlemaps/js-api-loader": "^1.16.8",
         "@headlessui/react": "^2.0.0",
         "@inertiajs/react": "^2.0.0",
         "@tailwindcss/forms": "^0.5.3",
         "@tailwindcss/vite": "^4.0.0",
+        "@types/google.maps": "^3.58.1",
         "@types/node": "^22.12.0",
         "@types/react": "^18.0.28",
         "@types/react-dom": "^18.0.10",
@@ -19,14 +21,17 @@
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
-        "@types/google.maps": "^3.58.1",
         "lucide-react": "^1.16.0",
-        "@googlemaps/js-api-loader": "^1.16.8",
         "postcss": "^8.4.31",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "tailwindcss": "^3.2.1",
         "typescript": "^5.0.2",
         "vite": "^7.0.7"
+    },
+    "dependencies": {
+        "@googlemaps/markerclusterer": "^2.6.2",
+        "@types/leaflet": "^1.9.22",
+        "leaflet": "^1.9.4"
     }
 }

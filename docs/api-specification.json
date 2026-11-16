@@ -1,0 +1,132 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "V-Green SSI Mobile & Partner REST API",
+    "description": "Standardized REST API contracts for Phase 2 Android/Flutter field application and V-Green integration.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Genossys Engineering",
+      "email": "dev@vgreen-ssi.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000/api/v1",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Sanctum Token"
+      }
+    },
+    "schemas": {
+      "ApiResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "message": { "type": "string", "example": "Operasi berhasil dieksekusi." },
+          "data": { "type": "object" }
+        }
+      },
+      "ChecklistSlot": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "LAHAN_DEPAN" },
+          "category": { "type": "string", "enum": ["LAHAN", "MESIN", "PANEL_TIANG"] },
+          "label": { "type": "string", "example": "Lahan - Tampak Depan" },
+          "angle": { "type": "string", "example": "Depan" },
+          "order_index": { "type": "integer", "example": 1 }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Surveyor & Contractor Authentication",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "surveyor@ssi.co.id" },
+                  "password": { "type": "string", "example": "password" },
+                  "device_name": { "type": "string", "example": "Samsung Galaxy Tab A8" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token Bearer berhasil diterbitkan" },
+          "401": { "description": "Kredensial tidak valid" }
+        }
+      }
+    },
+    "/assignments": {
+      "get": {
+        "summary": "Daftar Titik Penugasan Survei & Inspeksi",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daftar stasiun berhasil diambil" }
+        }
+      }
+    },
+    "/stations/{station}/inspections": {
+      "post": {
+        "summary": "Submit 7-Angle Inspection Session with GPS Audit Tags",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "station", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["stage"],
+                "properties": {
+                  "stage": {
+                    "type": "string",
+                    "enum": ["INITIAL_SURVEY", "CONSTRUCTION_PROGRESS", "COMMISSIONING", "ROUTINE_PERIODIC"]
+                  },
+                  "notes": { "type": "string" },
+                  "photo_LAHAN_DEPAN": { "type": "string", "format": "binary" },
+                  "photo_LAHAN_SAMPING": { "type": "string", "format": "binary" },
+                  "photo_LAHAN_AKSES": { "type": "string", "format": "binary" },
+                  "photo_MESIN_DEPAN": { "type": "string", "format": "binary" },
+                  "photo_MESIN_BELAKANG": { "type": "string", "format": "binary" },
+                  "photo_PANEL_DEPAN": { "type": "string", "format": "binary" },
+                  "photo_PANEL_BELAKANG": { "type": "string", "format": "binary" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Laporan & 7 sudut foto berhasil tersimpan" }
+        }
+      }
+    },
+    "/inspections/{report}/status": {
+      "get": {
+        "summary": "Cek Status Approval & Catatan Revisi",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "report", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Status laporan berhasil diambil" }
+        }
+      }
+    }
+  }
+}

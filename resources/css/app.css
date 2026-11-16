@@ -1,3 +1,88 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+    /* Subtle diagonal stripe pattern for Sinao bar charts */
+    .bg-striped-subtle {
+        background-color: #F3F4F8;
+        background-image: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 5px,
+            rgba(0, 0, 0, 0.03) 5px,
+            rgba(0, 0, 0, 0.03) 10px
+        );
+    }
+
+    .bg-striped-blue {
+        background-color: #2D60FF;
+        background-image: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 6px,
+            rgba(255, 255, 255, 0.12) 6px,
+            rgba(255, 255, 255, 0.12) 12px
+        );
+    }
+}
+
+/* Ergonomic clean scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+}
+
+/* Leaflet Custom Tooltip Overrides */
+.leaflet-custom-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+.leaflet-custom-tooltip::before {
+    display: none !important;
+}
+.custom-station-pin {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Drawer Slide-in Left & Slide-out Right Animations */
+@keyframes drawerSlideInLeft {
+    0% {
+        transform: translateX(100%);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes drawerSlideOutRight {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-drawer-in {
+    animation: drawerSlideInLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: transform;
+}
+
+.animate-drawer-out {
+    animation: drawerSlideOutRight 0.25s cubic-bezier(0.7, 0, 0.84, 0) forwards;
+    will-change: transform;
+}

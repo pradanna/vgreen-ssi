@@ -18,7 +18,9 @@ class DatabaseSeeder extends Seeder
             ChecklistSlotSeeder::class,
             ApprovalStatusSeeder::class,
             UserSeeder::class,
+            MachineMasterSeeder::class,
             StationSeeder::class,
+            ProvinceTargetSeeder::class,
         ]);
     }
 }
