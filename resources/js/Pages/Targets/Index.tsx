@@ -295,7 +295,7 @@ export default function TargetsIndex({
     };
 
     return (
-        <div className="flex h-screen bg-[#F7F9FC] font-sans antialiased overflow-hidden text-slate-800">
+        <div className="flex h-screen bg-canvas font-sans antialiased overflow-hidden text-slate-800">
             <Head title="Target & Kuota Jaringan Nasional - V-Green SSI" />
 
             {/* SIDEBAR NAVIGATION */}
@@ -392,7 +392,7 @@ export default function TargetsIndex({
                                 </div>
                                 <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                     <div 
-                                        className="h-full bg-[#2D60FF] rounded-full transition-all duration-500" 
+                                        className="h-full bg-brand-600 rounded-full transition-all duration-500" 
                                         style={{ width: `${summary.total_target_national > 0 ? (summary.total_target_evcs / summary.total_target_national) * 100 : 0}%` }}
                                     />
                                 </div>
@@ -427,7 +427,7 @@ export default function TargetsIndex({
                                 </div>
                                 <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                     <div 
-                                        className="h-full bg-[#FF7A00] rounded-full transition-all duration-500" 
+                                        className="h-full bg-accent-500 rounded-full transition-all duration-500" 
                                         style={{ width: `${summary.total_target_national > 0 ? (summary.total_target_bss / summary.total_target_national) * 100 : 0}%` }}
                                     />
                                 </div>
@@ -486,7 +486,7 @@ export default function TargetsIndex({
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Cari provinsi..."
-                                        className="w-full bg-[#F4F5F8] hover:bg-[#ECEFF4] border border-slate-200/60 rounded-full pl-9 pr-7 py-2 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition"
+                                        className="w-full bg-[#F4F5F8] hover:bg-[#ECEFF4] border border-slate-200/60 rounded-full pl-9 pr-7 py-2 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition"
                                     />
                                     {searchQuery && (
                                         <button
@@ -546,7 +546,7 @@ export default function TargetsIndex({
                                 {isInternal && (
                                     <button
                                         onClick={() => setIsCreateModalOpen(true)}
-                                        className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm shadow-blue-500/20 flex items-center gap-1.5 transition shrink-0"
+                                        className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs shadow-blue-500/20 flex items-center gap-1.5 transition shrink-0"
                                     >
                                         <Plus className="w-3.5 h-3.5" />
                                         <span>Tambah Target</span>
@@ -733,7 +733,7 @@ export default function TargetsIndex({
                                         min="0"
                                         value={editData.target_evcs}
                                         onChange={(e) => setEditData('target_evcs', parseInt(e.target.value) || 0)}
-                                        className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                        className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                         required
                                     />
                                     {editErrors.target_evcs && <p className="text-rose-500 text-[11px] mt-1">{editErrors.target_evcs}</p>}
@@ -748,7 +748,7 @@ export default function TargetsIndex({
                                         min="0"
                                         value={editData.target_bss}
                                         onChange={(e) => setEditData('target_bss', parseInt(e.target.value) || 0)}
-                                        className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                        className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                         required
                                     />
                                     {editErrors.target_bss && <p className="text-rose-500 text-[11px] mt-1">{editErrors.target_bss}</p>}
@@ -770,7 +770,7 @@ export default function TargetsIndex({
                                         value={editData.notes}
                                         onChange={(e) => setEditData('notes', e.target.value)}
                                         placeholder="Catatan prioritas, rest area tol, dll..."
-                                        className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                        className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                     />
                                 </div>
 
@@ -785,7 +785,7 @@ export default function TargetsIndex({
                                     <button
                                         type="submit"
                                         disabled={editProcessing}
-                                        className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition disabled:opacity-50"
+                                        className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition disabled:opacity-50"
                                     >
                                         {editProcessing ? 'Menyimpan...' : 'Simpan Perubahan'}
                                     </button>
@@ -824,7 +824,7 @@ export default function TargetsIndex({
                                         value={createData.province_name}
                                         onChange={(e) => setCreateData('province_name', e.target.value)}
                                         placeholder="Contoh: Kalimantan Timur, Banten..."
-                                        className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                        className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                         required
                                     />
                                     {createErrors.province_name && <p className="text-rose-500 text-[11px] mt-1">{createErrors.province_name}</p>}
@@ -837,7 +837,7 @@ export default function TargetsIndex({
                                     <select
                                         value={createData.region}
                                         onChange={(e) => setCreateData('region', e.target.value)}
-                                        className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                        className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                     >
                                         {regions.map((r) => (
                                             <option key={r} value={r}>{r}</option>
@@ -855,7 +855,7 @@ export default function TargetsIndex({
                                             min="0"
                                             value={createData.target_evcs}
                                             onChange={(e) => setCreateData('target_evcs', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                            className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                             required
                                         />
                                     </div>
@@ -868,7 +868,7 @@ export default function TargetsIndex({
                                             min="0"
                                             value={createData.target_bss}
                                             onChange={(e) => setCreateData('target_bss', parseInt(e.target.value) || 0)}
-                                            className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                            className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-semibold focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                             required
                                         />
                                     </div>
@@ -883,7 +883,7 @@ export default function TargetsIndex({
                                         value={createData.notes}
                                         onChange={(e) => setCreateData('notes', e.target.value)}
                                         placeholder="Catatan prioritas..."
-                                        className="w-full bg-[#F7F9FC] border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                        className="w-full bg-canvas border border-[#E8ECF2] rounded-xl px-3.5 py-2.5 text-xs font-medium focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                     />
                                 </div>
 
@@ -898,7 +898,7 @@ export default function TargetsIndex({
                                     <button
                                         type="submit"
                                         disabled={createProcessing}
-                                        className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition disabled:opacity-50"
+                                        className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition disabled:opacity-50"
                                     >
                                         {createProcessing ? 'Menyimpan...' : 'Simpan Target'}
                                     </button>

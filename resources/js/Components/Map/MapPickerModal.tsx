@@ -218,7 +218,7 @@ export default function MapPickerModal({
 
     return (
         <div 
-            className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
+            className="fixed inset-0 z-70 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
             onClick={(e) => {
                 if (e.target === e.currentTarget) {
                     onClose();
@@ -267,7 +267,7 @@ export default function MapPickerModal({
                         <select
                             value={selectedProvince}
                             onChange={(e) => handleProvinceSelect(e.target.value)}
-                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer min-w-[150px] max-w-[200px]"
+                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer min-w-[150px] max-w-[200px]"
                         >
                             <option value="">-- Pilih Provinsi --</option>
                             {provinceList.map((prov) => (
@@ -280,7 +280,7 @@ export default function MapPickerModal({
                             value={selectedCity}
                             onChange={(e) => handleCitySelect(e.target.value)}
                             disabled={!selectedProvince}
-                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed min-w-[150px] max-w-[200px]"
+                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed min-w-[150px] max-w-[200px]"
                         >
                             <option value="">{selectedProvince ? '-- Pilih Kota / Kab --' : '-- Pilih Provinsi Dulu --'}</option>
                             {availableCities.map((city) => (
@@ -296,7 +296,7 @@ export default function MapPickerModal({
                             onClick={() => handleToggleLayer('streets')}
                             className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition flex items-center gap-1.5 ${
                                 mapLayer === 'streets'
-                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
                                     : 'text-slate-600 hover:bg-slate-50'
                             }`}
                         >
@@ -307,7 +307,7 @@ export default function MapPickerModal({
                             onClick={() => handleToggleLayer('satellite')}
                             className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition flex items-center gap-1.5 ${
                                 mapLayer === 'satellite'
-                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    ? 'bg-blue-600 text-white shadow-2xs'
                                     : 'text-slate-600 hover:bg-slate-50'
                             }`}
                         >
@@ -332,7 +332,7 @@ export default function MapPickerModal({
                     <div ref={mapContainerRef} className="absolute inset-0 w-full h-full custom-map-picker-canvas" />
 
                     {/* Floating Zoom Controls */}
-                    <div className="absolute top-4 right-4 z-[400] flex flex-col gap-1.5">
+                    <div className="absolute top-4 right-4 z-400 flex flex-col gap-1.5">
                         <button
                             type="button"
                             onClick={() => mapInstanceRef.current?.zoomIn()}
@@ -352,7 +352,7 @@ export default function MapPickerModal({
                     </div>
 
                     {/* Floating Instruction Badge */}
-                    <div className="absolute bottom-4 left-4 z-[400] bg-slate-900/85 backdrop-blur-xs text-white px-3 py-1.5 rounded-lg text-[11px] font-medium shadow-lg border border-white/10 hidden sm:flex items-center gap-2">
+                    <div className="absolute bottom-4 left-4 z-400 bg-slate-900/85 backdrop-blur-xs text-white px-3 py-1.5 rounded-lg text-[11px] font-medium shadow-lg border border-white/10 hidden sm:flex items-center gap-2">
                         <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
                         <span>Klik di peta untuk menempatkan pin • Geser (drag) untuk menggeser peta</span>
                     </div>
@@ -387,9 +387,9 @@ export default function MapPickerModal({
                         <button
                             type="button"
                             onClick={handleConfirm}
-                            className="h-9 px-4.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5"
+                            className="h-9 px-4.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-2xs transition flex items-center gap-1.5"
                         >
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            <Check className="w-3.5 h-3.5 stroke-3" />
                             <span>Gunakan Titik Ini</span>
                         </button>
                     </div>

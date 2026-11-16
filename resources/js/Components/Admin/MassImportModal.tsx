@@ -61,7 +61,7 @@ VG-DPS-002,V-Green Swap Sunset Road,BSS,CONSTRUCTION,-8.7042,115.1780,"Jl. Sunse
 
     return (
         <div 
-            className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+            className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
             onClick={onClose}
         >
             <div 
@@ -102,7 +102,7 @@ VG-DPS-002,V-Green Swap Sunset Road,BSS,CONSTRUCTION,-8.7042,115.1780,"Jl. Sunse
                         <button
                             type="button"
                             onClick={downloadSampleCsv}
-                            className="px-3.5 py-1.5 rounded-xl bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-xs"
+                            className="px-3.5 py-1.5 rounded-xl bg-white border border-blue-200 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-1.5 shrink-0 shadow-2xs"
                         >
                             <Download className="w-3.5 h-3.5" />
                             <span>Download CSV</span>
@@ -144,7 +144,7 @@ VG-DPS-002,V-Green Swap Sunset Road,BSS,CONSTRUCTION,-8.7042,115.1780,"Jl. Sunse
                             <button
                                 type="submit"
                                 disabled={!selectedFile || processing}
-                                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm transition disabled:opacity-50"
+                                className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition disabled:opacity-50"
                             >
                                 {processing ? 'Memproses Berkas...' : 'Mulai Import'}
                             </button>

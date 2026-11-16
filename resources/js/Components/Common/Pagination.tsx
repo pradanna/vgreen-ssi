@@ -112,7 +112,7 @@ export default function Pagination({
                         <select
                             value={data.per_page}
                             onChange={handlePerPageSelect}
-                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
+                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
                             title="Jumlah baris per halaman"
                         >
                             {perPageOptions.map((opt) => (
@@ -166,7 +166,7 @@ export default function Pagination({
                                     disabled={link.active || !link.url}
                                     className={`h-8 min-w-[32px] px-2 rounded-lg text-xs font-bold transition flex items-center justify-center ${
                                         link.active
-                                            ? 'bg-blue-600 text-white shadow-xs border border-blue-600 cursor-default'
+                                            ? 'bg-blue-600 text-white shadow-2xs border border-blue-600 cursor-default'
                                             : link.url
                                             ? 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 shadow-2xs cursor-pointer'
                                             : 'bg-slate-50/50 text-slate-300 border border-slate-100 cursor-not-allowed'

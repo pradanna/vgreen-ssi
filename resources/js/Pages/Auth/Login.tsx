@@ -101,10 +101,10 @@ export default function Login({
                                 name="email"
                                 value={data.email}
                                 placeholder="Masukkan username"
-                                className={`w-full rounded-2xl border bg-[#F8FAFC] pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-xs focus:bg-white focus:outline-none focus:ring-4 transition ${
+                                className={`w-full rounded-2xl border bg-[#F8FAFC] pl-10 pr-4 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs focus:bg-white focus:outline-hidden focus:ring-4 transition ${
                                     errors.email
                                         ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-                                        : 'border-[#E2E8F0] focus:border-[#2D60FF] focus:ring-blue-500/10'
+                                        : 'border-[#E2E8F0] focus:border-brand-600 focus:ring-blue-500/10'
                                 }`}
                                 autoComplete="username"
                                 autoFocus
@@ -121,7 +121,7 @@ export default function Login({
                             {canResetPassword && (
                                 <Link
                                     href={route('password.request')}
-                                    className="text-xs font-semibold text-[#2D60FF] hover:text-[#204FDE] transition hover:underline"
+                                    className="text-xs font-semibold text-brand-600 hover:text-[#204FDE] transition hover:underline"
                                 >
                                     Lupa password?
                                 </Link>
@@ -137,10 +137,10 @@ export default function Login({
                                 name="password"
                                 value={data.password}
                                 placeholder="••••••••••••"
-                                className={`w-full rounded-2xl border bg-[#F8FAFC] pl-10 pr-11 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-xs focus:bg-white focus:outline-none focus:ring-4 transition ${
+                                className={`w-full rounded-2xl border bg-[#F8FAFC] pl-10 pr-11 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-2xs focus:bg-white focus:outline-hidden focus:ring-4 transition ${
                                     errors.password
                                         ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-                                        : 'border-[#E2E8F0] focus:border-[#2D60FF] focus:ring-blue-500/10'
+                                        : 'border-[#E2E8F0] focus:border-brand-600 focus:ring-blue-500/10'
                                 }`}
                                 autoComplete="current-password"
                                 required
@@ -150,7 +150,7 @@ export default function Login({
                                 type="button"
                                 tabIndex={-1}
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition focus:outline-none"
+                                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition focus:outline-hidden"
                                 title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                             >
                                 {showPassword ? (
@@ -182,7 +182,7 @@ export default function Login({
                         <button
                             type="submit"
                             disabled={processing}
-                            className="w-full py-3 px-6 rounded-2xl bg-[#2D60FF] hover:bg-[#204FDE] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
+                            className="w-full py-3 px-6 rounded-2xl bg-brand-600 hover:bg-[#204FDE] text-white font-bold text-sm shadow-md shadow-blue-500/25 flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
                         >
                             {processing ? (
                                 <>

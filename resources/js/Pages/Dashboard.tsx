@@ -571,7 +571,7 @@ export default function Dashboard({
     };
 
     return (
-        <div className="flex h-screen w-screen bg-[#F7F9FC] text-slate-800 font-sans overflow-hidden antialiased">
+        <div className="flex h-screen w-screen bg-canvas text-slate-800 font-sans overflow-hidden antialiased">
             <Head title="V-Green SSI - Charging Station Management & GIS Platform" />
 
             {/* Unified Sinao Sidebar Navigation */}
@@ -600,7 +600,7 @@ export default function Dashboard({
 
                         {activeNav === 'stations' && (
                             <div className="hidden sm:flex items-center gap-2">
-                                <span className="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-700 font-bold text-xs border border-blue-200/60 flex items-center gap-1.5 shadow-xs">
+                                <span className="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-700 font-bold text-xs border border-blue-200/60 flex items-center gap-1.5 shadow-2xs">
                                     <TableIcon className="w-3.5 h-3.5" />
                                     <span>Tabel Master Titik Stasiun</span>
                                 </span>
@@ -618,13 +618,13 @@ export default function Dashboard({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Cari stasiun, kode VG-..., kota..."
-                                className="w-full bg-white border border-[#E8ECF2] rounded-full pl-11 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 shadow-subtle focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 transition"
+                                className="w-full bg-white border border-[#E8ECF2] rounded-full pl-11 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 shadow-subtle focus:outline-hidden focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 transition"
                             />
                         </div>
 
                         {/* Notification Bell */}
                         <button 
-                            className="relative w-10 h-10 rounded-full bg-white border border-[#E8ECF2] flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-subtle hover:shadow transition"
+                            className="relative w-10 h-10 rounded-full bg-white border border-[#E8ECF2] flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-subtle hover:shadow-sm transition"
                             title="Notifikasi Verifikasi"
                         >
                             <Bell className="w-4 h-4" />
@@ -643,9 +643,9 @@ export default function Dashboard({
                 <div className="flex-1 overflow-y-auto px-8 pb-28 space-y-7">
                     {/* Banner for QC / Inspection view */}
                     {activeNav === 'inspections' && (
-                        <div className="bg-blue-50/80 border border-blue-200/80 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                        <div className="bg-blue-50/80 border border-blue-200/80 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
                             <div className="flex items-center gap-3.5">
-                                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                                     <ShieldCheck className="w-5 h-5" />
                                 </div>
                                 <div>
@@ -656,7 +656,7 @@ export default function Dashboard({
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-bold px-3 py-1.5 bg-white text-blue-700 border border-blue-200 rounded-full shadow-xs">
+                                <span className="text-xs font-bold px-3 py-1.5 bg-white text-blue-700 border border-blue-200 rounded-full shadow-2xs">
                                     {stats.construction + stats.surveyed} Titik Memerlukan Audit
                                 </span>
                             </div>
@@ -692,7 +692,7 @@ export default function Dashboard({
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-[#2D60FF] rounded-full transition-all duration-500" 
+                                            className="h-full bg-brand-600 rounded-full transition-all duration-500" 
                                             style={{ width: `${(stats.evcs / (stats.total || 1)) * 100}%` }}
                                         />
                                     </div>
@@ -705,7 +705,7 @@ export default function Dashboard({
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-[#FF7A00] rounded-full transition-all duration-500" 
+                                            className="h-full bg-accent-500 rounded-full transition-all duration-500" 
                                             style={{ width: `${(stats.bss / (stats.total || 1)) * 100}%` }}
                                         />
                                     </div>
@@ -740,7 +740,7 @@ export default function Dashboard({
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-[#2D60FF] rounded-full transition-all duration-500" 
+                                            className="h-full bg-brand-600 rounded-full transition-all duration-500" 
                                             style={{ width: `${(constructionEvcs / (stats.construction || 1)) * 100}%` }}
                                         />
                                     </div>
@@ -753,7 +753,7 @@ export default function Dashboard({
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-[#FF7A00] rounded-full transition-all duration-500" 
+                                            className="h-full bg-accent-500 rounded-full transition-all duration-500" 
                                             style={{ width: `${((constructionBss + constructionCombined) / (stats.construction || 1)) * 100}%` }}
                                         />
                                     </div>
@@ -993,7 +993,7 @@ export default function Dashboard({
                                         onClick={() => setSelectedTimeRange('1y')}
                                         className={`px-3 py-1 rounded-full transition ${
                                             selectedTimeRange === '1y'
-                                                ? 'bg-[#2D60FF] text-white shadow-xs'
+                                                ? 'bg-brand-600 text-white shadow-2xs'
                                                 : 'hover:text-slate-900'
                                         }`}
                                     >
@@ -1003,7 +1003,7 @@ export default function Dashboard({
                                         onClick={() => setSelectedTimeRange('6m')}
                                         className={`px-3 py-1 rounded-full transition ${
                                             selectedTimeRange === '6m'
-                                                ? 'bg-[#2D60FF] text-white shadow-xs'
+                                                ? 'bg-brand-600 text-white shadow-2xs'
                                                 : 'hover:text-slate-900'
                                         }`}
                                     >
@@ -1013,7 +1013,7 @@ export default function Dashboard({
                                         onClick={() => setSelectedTimeRange('3m')}
                                         className={`px-3 py-1 rounded-full transition ${
                                             selectedTimeRange === '3m'
-                                                ? 'bg-[#2D60FF] text-white shadow-xs'
+                                                ? 'bg-brand-600 text-white shadow-2xs'
                                                 : 'hover:text-slate-900'
                                         }`}
                                     >
@@ -1028,7 +1028,7 @@ export default function Dashboard({
                                         <span>Target Plafon ({currentChartTarget.toLocaleString('id-ID')} Titik)</span>
                                     </div>
                                     <div className="flex items-center gap-1.5 text-slate-600">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-[#2D60FF] ring-2 ring-blue-100"></span>
+                                        <span className="w-2.5 h-2.5 rounded-full bg-brand-600 ring-2 ring-blue-100"></span>
                                         <span>Realisasi Live</span>
                                     </div>
                                 </div>
@@ -1195,7 +1195,7 @@ export default function Dashboard({
                                 {filteredRolloutData.map((d, i) => (
                                     <span 
                                         key={i} 
-                                        className={d.isCurrent ? 'text-[#2D60FF] font-extrabold' : 'text-slate-400 font-medium'}
+                                        className={d.isCurrent ? 'text-brand-600 font-extrabold' : 'text-slate-400 font-medium'}
                                     >
                                         {d.month}
                                     </span>
@@ -1227,7 +1227,7 @@ export default function Dashboard({
                                             onClick={() => setLeaderboardTab('live')}
                                             className={`px-3 py-1 rounded-full transition ${
                                                 leaderboardTab === 'live'
-                                                    ? 'bg-[#2D60FF] text-white shadow-xs'
+                                                    ? 'bg-brand-600 text-white shadow-2xs'
                                                     : 'hover:text-slate-900'
                                             }`}
                                         >
@@ -1237,7 +1237,7 @@ export default function Dashboard({
                                             onClick={() => setLeaderboardTab('deficit')}
                                             className={`px-3 py-1 rounded-full transition ${
                                                 leaderboardTab === 'deficit'
-                                                    ? 'bg-[#2D60FF] text-white shadow-xs'
+                                                    ? 'bg-brand-600 text-white shadow-2xs'
                                                     : 'hover:text-slate-900'
                                             }`}
                                         >
@@ -1247,7 +1247,7 @@ export default function Dashboard({
                                             onClick={() => setLeaderboardTab('percentage')}
                                             className={`px-3 py-1 rounded-full transition ${
                                                 leaderboardTab === 'percentage'
-                                                    ? 'bg-[#2D60FF] text-white shadow-xs'
+                                                    ? 'bg-brand-600 text-white shadow-2xs'
                                                     : 'hover:text-slate-900'
                                             }`}
                                         >
@@ -1350,7 +1350,7 @@ export default function Dashboard({
                                 </span>
                                 <Link 
                                     href={route('targets.index')}
-                                    className="text-xs font-bold text-[#2D60FF] hover:text-blue-700 flex items-center gap-1 transition group"
+                                    className="text-xs font-bold text-brand-600 hover:text-blue-700 flex items-center gap-1 transition group"
                                 >
                                     <span>Buka Target Lengkap</span>
                                     <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -1456,7 +1456,7 @@ export default function Dashboard({
                                 </div>
 
                                 {/* Total Connected PLN Power & Slots (Real Live Data) */}
-                                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50/70 to-indigo-50/70 border border-blue-100 flex items-center justify-between text-xs">
+                                <div className="p-3.5 rounded-2xl bg-linear-to-r from-blue-50/70 to-indigo-50/70 border border-blue-100 flex items-center justify-between text-xs">
                                     <div>
                                         <span className="font-semibold text-slate-600 block text-[11px]">Total Daya Terpasang PLN (Live):</span>
                                         <span className="text-base font-extrabold text-slate-900">
@@ -1594,7 +1594,7 @@ export default function Dashboard({
                                         <>
                                             <button
                                                 onClick={() => setIsImportModalOpen(true)}
-                                                className="px-3.5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                                                className="px-3.5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
                                             >
                                                 <FileSpreadsheet className="w-3.5 h-3.5" />
                                                 <span>Import Data .csv</span>
@@ -1602,7 +1602,7 @@ export default function Dashboard({
 
                                             <a
                                                 href={route('admin.stations.export')}
-                                                className="px-3.5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                                                className="px-3.5 py-2 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
                                                 title="Unduh Rekapitulasi Data Stasiun ke CSV/Excel"
                                             >
                                                 <Download className="w-3.5 h-3.5" />
@@ -1611,7 +1611,7 @@ export default function Dashboard({
 
                                             <button
                                                 onClick={() => setIsAddStationModalOpen(true)}
-                                                className="px-3.5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                                                className="px-3.5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
                                             >
                                                 <Plus className="w-3.5 h-3.5" />
                                                 <span>Tambah Titik</span>
@@ -1733,7 +1733,7 @@ export default function Dashboard({
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Cari kode, nama, atau kota..."
-                                        className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200/80 rounded-xl text-xs placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                        className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200/80 rounded-xl text-xs placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                     />
                                     {searchQuery && (
                                         <button
@@ -1755,7 +1755,7 @@ export default function Dashboard({
                                     <thead>
                                         <tr className="border-b border-[#EDF1F7] text-xs font-bold text-slate-400 select-none">
                                             <th className="py-4 pl-6 pr-3 w-10">
-                                                <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
+                                                <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
                                             </th>
                                             <th className="py-4 px-4">
                                                 <div className="flex items-center gap-1.5 hover:text-slate-600 cursor-pointer">
@@ -1800,7 +1800,7 @@ export default function Dashboard({
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-[#F1F4F9] text-xs">
+                                    <tbody className="divide-y divide-canvas-subtle text-xs">
                                         {filteredStations.map((station, idx) => {
                                             const isSelected = selectedStation?.id === station.id;
 
@@ -1821,7 +1821,7 @@ export default function Dashboard({
                                                     }`}
                                                 >
                                                     <td className="py-4 pl-6 pr-3" onClick={(e) => e.stopPropagation()}>
-                                                        <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
+                                                        <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
                                                     </td>
                                                     <td className="py-4 px-4 max-w-[200px]">
                                                         <div className="font-bold text-slate-900 leading-snug truncate" title={station.name}>
@@ -1833,7 +1833,7 @@ export default function Dashboard({
                                                     </td>
                                                     <td className="py-4 px-4">
                                                         <div 
-                                                            className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-700 shadow-xs" 
+                                                            className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-700 shadow-2xs" 
                                                             title={station.facility_type?.name || station.facility_type_id}
                                                         >
                                                             {station.facility_type_id === 'EVCS' && <Car className="w-4 h-4 text-blue-600" />}

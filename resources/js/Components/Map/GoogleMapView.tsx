@@ -411,7 +411,7 @@ export default function GoogleMapView({
 
             {/* GOOGLE MAPS BRANDING BADGE (BOTTOM RIGHT) */}
             <div className="absolute bottom-2 right-4 z-20 pointer-events-none">
-                <span className="text-[10px] font-bold text-slate-500 bg-white/80 backdrop-blur-xs px-2 py-0.5 rounded shadow-xs">
+                <span className="text-[10px] font-bold text-slate-500 bg-white/80 backdrop-blur-xs px-2 py-0.5 rounded-sm shadow-2xs">
                     Peta Resmi Google Maps &copy; {new Date().getFullYear()}
                 </span>
             </div>

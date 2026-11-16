@@ -602,7 +602,7 @@ export default function StationDetailDrawer({
                                         return (
                                             <div 
                                                 key={m.id || idx}
-                                                className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 hover:border-blue-300 transition space-y-2.5 shadow-xs"
+                                                className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 hover:border-blue-300 transition space-y-2.5 shadow-2xs"
                                             >
                                                 <div className="flex items-start justify-between gap-3">
                                                     <div className="flex items-center gap-3 min-w-0">
@@ -617,7 +617,7 @@ export default function StationDetailDrawer({
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                                                                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-sm bg-white border border-slate-200 text-slate-600">
                                                                     Mesin {idx + 1}
                                                                 </span>
                                                                 <span className="text-xs font-bold text-slate-900 truncate">
@@ -666,7 +666,7 @@ export default function StationDetailDrawer({
                                     <MapPin className="w-3.5 h-3.5 text-blue-600" />
                                     Lokasi &amp; Alamat Stasiun
                                 </h3>
-                                <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 shadow-xs">
+                                <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 shadow-2xs">
                                     <p className="text-xs text-slate-800 font-semibold leading-relaxed">
                                         {station.address}
                                     </p>
@@ -696,7 +696,7 @@ export default function StationDetailDrawer({
                                     <Building2 className="w-3.5 h-3.5 text-blue-600" />
                                     Data Pemilik Lahan
                                 </h3>
-                                <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 text-xs shadow-xs">
+                                <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 text-xs shadow-2xs">
                                     <div className="flex items-center justify-between">
                                         <span className="text-slate-500">Nama Pemilik:</span>
                                         <span className="font-bold text-slate-900 text-right">
@@ -850,7 +850,7 @@ export default function StationDetailDrawer({
                                                     key={typeKey}
                                                     className={`p-3.5 rounded-2xl border transition flex items-center justify-between gap-3 ${
                                                         doc 
-                                                            ? 'bg-white border-slate-200/80 shadow-xs' 
+                                                            ? 'bg-white border-slate-200/80 shadow-2xs' 
                                                             : 'bg-amber-50/30 border-dashed border-amber-300/80'
                                                     }`}
                                                 >
@@ -866,11 +866,11 @@ export default function StationDetailDrawer({
                                                                     {typeLabel}
                                                                 </span>
                                                                 {doc ? (
-                                                                    <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-emerald-50 text-emerald-700">
+                                                                    <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-sm bg-emerald-50 text-emerald-700">
                                                                         TERSEDIA
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="px-1.5 py-0.2 text-[9px] font-bold rounded bg-amber-100 text-amber-800">
+                                                                    <span className="px-1.5 py-0.2 text-[9px] font-bold rounded-sm bg-amber-100 text-amber-800">
                                                                         WAJIB
                                                                     </span>
                                                                 )}
@@ -994,14 +994,14 @@ export default function StationDetailDrawer({
                         <div className="space-y-4">
                             {/* Session Info Banner */}
                             {!isVGreen && (
-                                <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs shadow-xs">
+                                <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs shadow-2xs">
                                     <div className="flex items-center gap-2">
                                         <span className="text-slate-500 font-medium">Sesi Inspeksi:</span>
                                         {inspectionHistory.length > 1 ? (
                                             <select
                                                 value={selectedInspectionId || ''}
                                                 onChange={(e) => setSelectedInspectionId(Number(e.target.value))}
-                                                className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                                className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                             >
                                                 {inspectionHistory.map((ins) => (
                                                     <option key={ins.id} value={ins.id}>
@@ -1020,7 +1020,7 @@ export default function StationDetailDrawer({
                                     </div>
                                     <button
                                         onClick={() => setIsUploadModalOpen(true)}
-                                        className="px-3 py-1.5 rounded-full bg-blue-600 text-white font-bold text-[11px] hover:bg-blue-700 transition flex items-center gap-1 shadow-xs ml-auto"
+                                        className="px-3 py-1.5 rounded-full bg-blue-600 text-white font-bold text-[11px] hover:bg-blue-700 transition flex items-center gap-1 shadow-2xs ml-auto"
                                     >
                                         <UploadCloud className="w-3.5 h-3.5" />
                                         <span>Unggah Sesi Baru</span>
@@ -1034,7 +1034,7 @@ export default function StationDetailDrawer({
                                     onClick={() => setPhotoCategoryFilter('ALL')}
                                     className={`px-3.5 py-1.5 rounded-full font-medium transition ${
                                         photoCategoryFilter === 'ALL'
-                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            ? 'bg-blue-600 text-white shadow-xs'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
@@ -1044,7 +1044,7 @@ export default function StationDetailDrawer({
                                     onClick={() => setPhotoCategoryFilter('LAHAN')}
                                     className={`px-3.5 py-1.5 rounded-full font-medium transition ${
                                         photoCategoryFilter === 'LAHAN'
-                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            ? 'bg-blue-600 text-white shadow-xs'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
@@ -1054,7 +1054,7 @@ export default function StationDetailDrawer({
                                     onClick={() => setPhotoCategoryFilter('MESIN')}
                                     className={`px-3.5 py-1.5 rounded-full font-medium transition ${
                                         photoCategoryFilter === 'MESIN'
-                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            ? 'bg-blue-600 text-white shadow-xs'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
@@ -1064,7 +1064,7 @@ export default function StationDetailDrawer({
                                     onClick={() => setPhotoCategoryFilter('PANEL_TIANG')}
                                     className={`px-3.5 py-1.5 rounded-full font-medium transition ${
                                         photoCategoryFilter === 'PANEL_TIANG'
-                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            ? 'bg-blue-600 text-white shadow-xs'
                                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                     }`}
                                 >
@@ -1092,11 +1092,11 @@ export default function StationDetailDrawer({
                                                     alt={photo.slot_label}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                                                 />
-                                                <span className="absolute bottom-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-white">
+                                                <span className="absolute bottom-2 left-2 text-[10px] font-medium px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white">
                                                     {photo.angle || photo.slot_label}
                                                 </span>
                                                 {photo.is_approved && (
-                                                    <span className="absolute top-2 right-2 p-1 rounded-full bg-emerald-500 text-white shadow">
+                                                    <span className="absolute top-2 right-2 p-1 rounded-full bg-emerald-500 text-white shadow-sm">
                                                         <Check className="w-3 h-3" />
                                                     </span>
                                                 )}
@@ -1190,7 +1190,7 @@ export default function StationDetailDrawer({
                                             onChange={(e) => setReviewNotes(e.target.value)}
                                             rows={3}
                                             placeholder="Tuliskan catatan evaluasi visual atau poin revisi sebelum menyetujui..."
-                                            className="w-full bg-white border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+                                            className="w-full bg-white border border-slate-200 rounded-2xl p-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
                                         />
 
                                         <div className="grid grid-cols-2 gap-3 pt-1">
@@ -1198,7 +1198,7 @@ export default function StationDetailDrawer({
                                                 type="button"
                                                 disabled={isSubmittingReview}
                                                 onClick={() => handleApprovalSubmit('APPROVE')}
-                                                className="py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition disabled:opacity-50 cursor-pointer"
+                                                className="py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-2xs transition disabled:opacity-50 cursor-pointer"
                                             >
                                                 {isSubmittingReview ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1298,17 +1298,17 @@ export default function StationDetailDrawer({
                                     ].map((m, idx) => (
                                         <div key={idx} className="relative">
                                             {/* Step Indicator Dot */}
-                                            <div className={`absolute -left-[30px] top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2 ${
+                                            <div className={`absolute left-[-30px] top-0.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border-2 ${
                                                 m.isDone
-                                                    ? 'bg-emerald-500 border-white text-white shadow-xs'
+                                                    ? 'bg-emerald-500 border-white text-white shadow-2xs'
                                                     : m.isInProgress
-                                                    ? 'bg-blue-600 border-white text-white shadow-xs ring-2 ring-blue-200 animate-pulse'
+                                                    ? 'bg-blue-600 border-white text-white shadow-2xs ring-2 ring-blue-200 animate-pulse'
                                                     : 'bg-white border-slate-300 text-slate-400'
                                             }`}>
-                                                {m.isDone ? <Check className="w-3 h-3 stroke-[3]" /> : m.step}
+                                                {m.isDone ? <Check className="w-3 h-3 stroke-3" /> : m.step}
                                             </div>
 
-                                            <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-1 shadow-xs">
+                                            <div className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-1 shadow-2xs">
                                                 <div className="flex items-center justify-between gap-2">
                                                     <h4 className="font-bold text-slate-900 text-xs">{m.title}</h4>
                                                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -1364,7 +1364,7 @@ export default function StationDetailDrawer({
                                             return (
                                                 <div 
                                                     key={ins.id || idx}
-                                                    className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 shadow-xs hover:border-blue-300 transition"
+                                                    className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 shadow-2xs hover:border-blue-300 transition"
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2">
@@ -1445,7 +1445,7 @@ export default function StationDetailDrawer({
             {/* FULL PHOTO VIEWER MODAL WITH ZOOM & NEXT/PREV NAVIGATION (Milestone 3) */}
             {currentPhoto && (
                 <div 
-                    className="fixed inset-0 z-[60] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
+                    className="fixed inset-0 z-60 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in"
                     onClick={() => { setSelectedPhotoIndex(null); setIsZoomed(false); }}
                 >
                     <div 
@@ -1493,7 +1493,7 @@ export default function StationDetailDrawer({
                             {selectedPhotoIndex! > 0 && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setSelectedPhotoIndex(selectedPhotoIndex! - 1); }}
-                                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition shadow-lg"
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition shadow-lg"
                                     title="Foto Sebelumnya (Panah Kiri)"
                                 >
                                     <ChevronLeft className="w-6 h-6" />
@@ -1504,7 +1504,7 @@ export default function StationDetailDrawer({
                             {selectedPhotoIndex! < filteredPhotos.length - 1 && (
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setSelectedPhotoIndex(selectedPhotoIndex! + 1); }}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-sm transition shadow-lg"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition shadow-lg"
                                     title="Foto Selanjutnya (Panah Kanan)"
                                 >
                                     <ChevronRight className="w-6 h-6" />
@@ -1537,7 +1537,7 @@ export default function StationDetailDrawer({
             {/* MODAL UPLOAD INSPECTION REPORT 7 SUDUT (Milestone 3) */}
             {isUploadModalOpen && (
                 <div 
-                    className="fixed inset-0 z-[70] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+                    className="fixed inset-0 z-70 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
                     onClick={() => setIsUploadModalOpen(false)}
                 >
                     <div 
@@ -1580,7 +1580,7 @@ export default function StationDetailDrawer({
                                             onClick={() => setUploadStage(item.id as any)}
                                             className={`p-2.5 rounded-xl text-center font-semibold transition border ${
                                                 uploadStage === item.id
-                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                                                     : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                                             }`}
                                         >
@@ -1620,7 +1620,7 @@ export default function StationDetailDrawer({
                                                     </span>
                                                 </div>
 
-                                                <label className="cursor-pointer shrink-0 px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-blue-500 text-[11px] font-bold text-slate-800 hover:text-blue-600 shadow-xs transition">
+                                                <label className="cursor-pointer shrink-0 px-3 py-1.5 rounded-xl bg-white border border-slate-200 hover:border-blue-500 text-[11px] font-bold text-slate-800 hover:text-blue-600 shadow-2xs transition">
                                                     {uploaded ? 'Ganti' : 'Pilih Foto'}
                                                     <input
                                                         type="file"
@@ -1645,7 +1645,7 @@ export default function StationDetailDrawer({
                                     onChange={(e) => setUploadNotes(e.target.value)}
                                     rows={2}
                                     placeholder="Keterangan kondisi fisik, kelistrikan, atau grounding stasiun..."
-                                    className="w-full bg-white border border-slate-200 rounded-2xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                    className="w-full bg-white border border-slate-200 rounded-2xl p-3 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                             </div>
 
@@ -1669,7 +1669,7 @@ export default function StationDetailDrawer({
                                 <button
                                     type="submit"
                                     disabled={isSubmittingReport}
-                                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition disabled:opacity-50"
+                                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition disabled:opacity-50"
                                 >
                                     {isSubmittingReport ? 'Mengunggah...' : 'Simpan & Ajukan Verifikasi'}
                                 </button>
@@ -1682,7 +1682,7 @@ export default function StationDetailDrawer({
             {/* MODAL UPLOAD LEGAL & CONTRACT DOCUMENT */}
             {isDocUploadOpen && (
                 <div 
-                    className="fixed inset-0 z-[75] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+                    className="fixed inset-0 z-75 bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
                     onClick={() => setIsDocUploadOpen(false)}
                 >
                     <div 
@@ -1718,7 +1718,7 @@ export default function StationDetailDrawer({
                                             onClick={() => setDocCategory(cat)}
                                             className={`py-2 rounded-xl text-xs font-bold border transition ${
                                                 docCategory === cat
-                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                                    ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                                                     : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                                             }`}
                                         >
@@ -1752,7 +1752,7 @@ export default function StationDetailDrawer({
                                             setDocTitle(labels[e.target.value]);
                                         }
                                     }}
-                                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-slate-800 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-slate-800 font-semibold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
                                 >
                                     <optgroup label="Dokumen Swasta">
                                         <option value="SHM">Sertifikat Hak Milik (SHM)</option>
@@ -1783,7 +1783,7 @@ export default function StationDetailDrawer({
                                     value={docTitle}
                                     onChange={(e) => setDocTitle(e.target.value)}
                                     placeholder="Contoh: SHM No. 4122 Gandaria City"
-                                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
                                     required
                                 />
                             </div>
@@ -1806,7 +1806,7 @@ export default function StationDetailDrawer({
                                     onChange={(e) => setDocNotes(e.target.value)}
                                     rows={2}
                                     placeholder="Nomor akta notaris, masa berlaku perizinan..."
-                                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl p-2.5 text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                                    className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl p-2.5 text-slate-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
                                 />
                             </div>
 
@@ -1821,7 +1821,7 @@ export default function StationDetailDrawer({
                                 <button
                                     type="submit"
                                     disabled={isUploadingDoc}
-                                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition flex items-center gap-1.5 disabled:opacity-50"
                                 >
                                     <UploadCloud className="w-4 h-4" />
                                     <span>{isUploadingDoc ? 'Mengunggah...' : 'Unggah Dokumen'}</span>

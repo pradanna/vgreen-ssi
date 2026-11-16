@@ -25,12 +25,12 @@ export default function UserDropdown({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/80 text-xs text-slate-800 transition shadow-sm hover:shadow focus:outline-none select-none"
+                className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/80 text-xs text-slate-800 transition shadow-xs hover:shadow-sm focus:outline-hidden select-none"
                 aria-expanded={isOpen}
                 aria-haspopup="true"
             >
                 <div className="relative shrink-0">
-                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <div className="w-7 h-7 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-2xs">
                         {initial}
                     </div>
                     <span 
@@ -63,7 +63,7 @@ export default function UserDropdown({
                         {/* User Identity Header */}
                         <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 mb-1">
                             <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
                                     {initial}
                                 </div>
                                 <div className="min-w-0 flex-1">

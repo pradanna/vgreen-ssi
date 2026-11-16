@@ -170,11 +170,11 @@ export default function SidebarNav({
                     </div>
                     {pendingCount > 0 && (
                         isCollapsed ? (
-                            <span className="absolute 1 top-2 right-2 bg-[#4E5BA6] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-xs ring-2 ring-white">
+                            <span className="absolute 1 top-2 right-2 bg-[#4E5BA6] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-2xs ring-2 ring-white">
                                 {pendingCount > 99 ? '99+' : pendingCount}
                             </span>
                         ) : (
-                            <span className="bg-[#4E5BA6] text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[28px] text-center shadow-xs">
+                            <span className="bg-[#4E5BA6] text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[28px] text-center shadow-2xs">
                                 {pendingCount}
                             </span>
                         )

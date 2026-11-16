@@ -230,7 +230,7 @@ export default function MachineDetailModal({
                                     onClose();
                                     onEdit(machine);
                                 }}
-                                className="px-4 py-2 rounded-2xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 shadow-sm shadow-blue-500/20 transition"
+                                className="px-4 py-2 rounded-2xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 shadow-xs shadow-blue-500/20 transition"
                             >
                                 <Edit3 className="w-3.5 h-3.5" />
                                 <span>Ubah Spesifikasi</span>

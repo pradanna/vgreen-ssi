@@ -137,7 +137,7 @@ export default function Select2<T extends string | number = string>({
                 type="button"
                 disabled={disabled}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full flex items-center justify-between gap-2.5 transition-all duration-200 outline-none focus:ring-2 focus:ring-blue-500/20 ${triggerBaseClass} ${
+                className={`w-full flex items-center justify-between gap-2.5 transition-all duration-200 outline-hidden focus:ring-2 focus:ring-blue-500/20 ${triggerBaseClass} ${
                     isOpen ? 'ring-2 ring-blue-500/20 border-blue-500 bg-white' : ''
                 } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
@@ -191,7 +191,7 @@ export default function Select2<T extends string | number = string>({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={searchPlaceholder}
-                                className="w-full bg-[#F7F9FC] border border-[#EDF1F7] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                                className="w-full bg-canvas border border-[#EDF1F7] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
                                 onClick={(e) => e.stopPropagation()}
                             />
                         </div>

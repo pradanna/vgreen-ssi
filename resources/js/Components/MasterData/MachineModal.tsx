@@ -223,7 +223,7 @@ export default function MachineModal({
 
                 {/* Preset Cepat Bar (Only for Add Mode) */}
                 {!isEditing && (
-                    <div className="mb-5 p-3.5 rounded-2xl bg-gradient-to-r from-blue-50/80 via-slate-50 to-emerald-50/80 border border-blue-200/60 space-y-2.5">
+                    <div className="mb-5 p-3.5 rounded-2xl bg-linear-to-r from-blue-50/80 via-slate-50 to-emerald-50/80 border border-blue-200/60 space-y-2.5">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
                                 <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
@@ -292,7 +292,7 @@ export default function MachineModal({
                             <select
                                 value={data.category_id}
                                 onChange={(e) => setData('category_id', Number(e.target.value))}
-                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 ${
                                     errors.category_id ? 'border-rose-400' : 'border-slate-200'
                                 }`}
                             >
@@ -315,7 +315,7 @@ export default function MachineModal({
                                 value={data.code}
                                 onChange={(e) => setData('code', e.target.value.toUpperCase())}
                                 placeholder="VF-DC-60KW"
-                                className={`w-full bg-[#F8FAFC] border rounded-2xl px-3 py-2 text-xs font-mono font-bold tracking-wider text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                                className={`w-full bg-[#F8FAFC] border rounded-2xl px-3 py-2 text-xs font-mono font-bold tracking-wider text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 ${
                                     errors.code ? 'border-rose-400' : 'border-slate-200'
                                 }`}
                             />
@@ -332,7 +332,7 @@ export default function MachineModal({
                                 value={data.brand}
                                 onChange={(e) => setData('brand', e.target.value)}
                                 placeholder="VinFast"
-                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 ${
                                     errors.brand ? 'border-rose-400' : 'border-slate-200'
                                 }`}
                             />
@@ -351,7 +351,7 @@ export default function MachineModal({
                                 value={data.name}
                                 onChange={(e) => setData('name', e.target.value)}
                                 placeholder="VinFast DC 60kW Dual Gun"
-                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 ${
                                     errors.name ? 'border-rose-400' : 'border-slate-200'
                                 }`}
                             />
@@ -368,7 +368,7 @@ export default function MachineModal({
                                 min={0}
                                 value={data.power_capacity_kw}
                                 onChange={(e) => setData('power_capacity_kw', parseInt(e.target.value) || 0)}
-                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-bold text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                                className={`w-full bg-white border rounded-2xl px-3 py-2 text-xs font-bold text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 ${
                                     errors.power_capacity_kw ? 'border-rose-400' : 'border-slate-200'
                                 }`}
                             />
@@ -538,7 +538,7 @@ export default function MachineModal({
                                     type="checkbox"
                                     checked={data.is_active}
                                     onChange={(e) => setData('is_active', e.target.checked)}
-                                    className="w-4 h-4 rounded text-blue-600 border-slate-300 focus:ring-blue-500"
+                                    className="w-4 h-4 rounded-sm text-blue-600 border-slate-300 focus:ring-blue-500"
                                 />
                                 <span className="text-xs font-bold text-slate-800">
                                     Katalog Aktif
@@ -559,7 +559,7 @@ export default function MachineModal({
                         <button
                             type="submit"
                             disabled={processing}
-                            className="px-5 py-2.5 rounded-2xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20 transition disabled:opacity-50"
+                            className="px-5 py-2.5 rounded-2xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/20 transition disabled:opacity-50"
                         >
                             {processing ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Tambah ke Katalog'}
                         </button>

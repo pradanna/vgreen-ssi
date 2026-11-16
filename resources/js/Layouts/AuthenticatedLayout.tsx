@@ -11,7 +11,7 @@ export default function Authenticated({
     const user = usePage().props.auth.user;
 
     return (
-        <div className="flex h-screen w-screen bg-[#F7F9FC] text-slate-800 font-sans overflow-hidden antialiased">
+        <div className="flex h-screen w-screen bg-canvas text-slate-800 font-sans overflow-hidden antialiased">
             {/* Unified Sinao Sidebar Navigation */}
             <SidebarNav user={user} activeNav="settings" />
 

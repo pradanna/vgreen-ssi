@@ -385,7 +385,7 @@ export default function StationFormModal({
     return (
         <>
             <div 
-                className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto animate-in fade-in duration-200"
+                className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto animate-in fade-in duration-200"
                 onClick={(e) => {
                     if (e.target === e.currentTarget) {
                         onClose();
@@ -456,18 +456,18 @@ export default function StationFormModal({
                                         onClick={() => setCurrentStep(s.step as 1 | 2 | 3)}
                                         className={`flex items-center gap-3 text-left transition px-3 py-2 rounded-2xl group flex-1 max-w-[320px] ${
                                             isCurrent 
-                                                ? 'bg-white shadow-xs border border-blue-200/80' 
+                                                ? 'bg-white shadow-2xs border border-blue-200/80' 
                                                 : 'hover:bg-white/60 border border-transparent'
                                         }`}
                                     >
-                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs transition shadow-xs shrink-0 ${
+                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs transition shadow-2xs shrink-0 ${
                                             isCurrent
                                                 ? 'bg-blue-600 text-white ring-4 ring-blue-500/10'
                                                 : isCompleted
                                                 ? 'bg-emerald-500 text-white'
                                                 : 'bg-slate-200/80 text-slate-600 group-hover:bg-slate-300'
                                         }`}>
-                                            {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : s.step}
+                                            {isCompleted ? <Check className="w-4 h-4 stroke-3" /> : s.step}
                                         </div>
                                         <div className="min-w-0">
                                             <div className={`text-xs font-bold leading-tight truncate ${isCurrent ? 'text-blue-900' : 'text-slate-800'}`}>
@@ -521,7 +521,7 @@ export default function StationFormModal({
                                             value={data.name}
                                             onChange={(e) => setData('name', e.target.value)}
                                             placeholder="Contoh: V-Green Hub SCBD Sudirman"
-                                            className="w-full h-9 px-3 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                             required
                                         />
                                         {errors.name && <span className="text-rose-500 text-[11px] mt-1 block">{errors.name}</span>}
@@ -534,7 +534,7 @@ export default function StationFormModal({
                                         <select
                                             value={data.status_id}
                                             onChange={(e) => setData('status_id', e.target.value as any)}
-                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
+                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
                                         >
                                             {stationStatuses.map(s => (
                                                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -551,7 +551,7 @@ export default function StationFormModal({
                                             value={data.operational_hours}
                                             onChange={(e) => setData('operational_hours', e.target.value)}
                                             placeholder="24 Jam / 08:00 - 22:00"
-                                            className="w-full h-9 px-3 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                         />
                                     </div>
                                 </div>
@@ -573,7 +573,7 @@ export default function StationFormModal({
                                         <button
                                             type="button"
                                             onClick={() => setIsMapPickerOpen(true)}
-                                            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition shadow-xs"
+                                            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
                                             title="Buka peta visual untuk memilih titik koordinat secara langsung"
                                         >
                                             <MapPin className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -603,7 +603,7 @@ export default function StationFormModal({
                                         <select
                                             value={data.province}
                                             onChange={(e) => handleProvinceChange(e.target.value)}
-                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
+                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
                                             required
                                         >
                                             <option value="">-- Pilih Provinsi --</option>
@@ -622,7 +622,7 @@ export default function StationFormModal({
                                             value={data.city}
                                             onChange={(e) => setData('city', e.target.value)}
                                             disabled={!data.province}
-                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
+                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
                                             required
                                         >
                                             <option value="">{data.province ? '-- Pilih Kota / Kab --' : '-- Pilih Provinsi Dulu --'}</option>
@@ -640,7 +640,7 @@ export default function StationFormModal({
                                             value={data.postal_code}
                                             onChange={(e) => setData('postal_code', e.target.value)}
                                             placeholder="Contoh: 12190"
-                                            className="w-full h-9 px-3 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                         />
                                     </div>
 
@@ -653,7 +653,7 @@ export default function StationFormModal({
                                             onChange={(e) => setData('address', e.target.value)}
                                             rows={2}
                                             placeholder="Jl. Jend. Sudirman Kav. 52-53, Kawasan Niaga Terpadu SCBD..."
-                                            className="w-full p-2.5 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full p-2.5 text-xs font-medium bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                             required
                                         />
                                         {errors.address && <span className="text-rose-500 text-[11px] mt-1 block">{errors.address}</span>}
@@ -668,7 +668,7 @@ export default function StationFormModal({
                                             step="0.0000001"
                                             value={data.latitude}
                                             onChange={(e) => setData('latitude', parseFloat(e.target.value) || 0)}
-                                            className="w-full h-9 px-3 text-xs font-mono font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs font-mono font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                             required
                                         />
                                         {errors.latitude && <span className="text-rose-500 text-[11px] mt-1 block">{errors.latitude}</span>}
@@ -683,7 +683,7 @@ export default function StationFormModal({
                                             step="0.0000001"
                                             value={data.longitude}
                                             onChange={(e) => setData('longitude', parseFloat(e.target.value) || 0)}
-                                            className="w-full h-9 px-3 text-xs font-mono font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs font-mono font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                             required
                                         />
                                         {errors.longitude && <span className="text-rose-500 text-[11px] mt-1 block">{errors.longitude}</span>}
@@ -739,7 +739,7 @@ export default function StationFormModal({
                                     <button
                                         type="button"
                                         onClick={addMachine}
-                                        className="h-8 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-xs"
+                                        className="h-8 px-3.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-2xs"
                                     >
                                         <Plus className="w-3.5 h-3.5" />
                                         <span>Tambah Mesin</span>
@@ -791,7 +791,7 @@ export default function StationFormModal({
                                                 <select
                                                     value={m.machine_id || ''}
                                                     onChange={(e) => handleSelectMasterMachine(idx, e.target.value)}
-                                                    className="h-8 bg-slate-50 border border-slate-200 rounded-md px-2.5 text-xs font-semibold text-slate-800 transition focus:outline-none focus:border-blue-600 max-w-md w-full sm:w-auto cursor-pointer"
+                                                    className="h-8 bg-slate-50 border border-slate-200 rounded-md px-2.5 text-xs font-semibold text-slate-800 transition focus:outline-hidden focus:border-blue-600 max-w-md w-full sm:w-auto cursor-pointer"
                                                 >
                                                     <option value="">-- Kustom (Input Manual) --</option>
                                                     {masterMachines.map((mm) => (
@@ -813,7 +813,7 @@ export default function StationFormModal({
                                                     value={m.name}
                                                     onChange={(e) => updateMachine(idx, 'name', e.target.value)}
                                                     placeholder="Unit DC Fast Charger 01"
-                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                                     required
                                                 />
                                             </div>
@@ -827,7 +827,7 @@ export default function StationFormModal({
                                                     value={m.brand || ''}
                                                     onChange={(e) => updateMachine(idx, 'brand', e.target.value)}
                                                     placeholder="Autel / Delta / V-Green"
-                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                                 />
                                             </div>
 
@@ -840,7 +840,7 @@ export default function StationFormModal({
                                                     value={m.serial_number || ''}
                                                     onChange={(e) => updateMachine(idx, 'serial_number', e.target.value)}
                                                     placeholder="ATC-2025-0012"
-                                                    className="w-full h-8.5 px-2.5 text-xs font-mono text-slate-900 bg-white border border-slate-200/90 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                    className="w-full h-8.5 px-2.5 text-xs font-mono text-slate-900 bg-white border border-slate-200/90 rounded-lg focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                                 />
                                             </div>
 
@@ -851,7 +851,7 @@ export default function StationFormModal({
                                                 <select
                                                     value={m.facility_type_id}
                                                     onChange={(e) => updateMachine(idx, 'facility_type_id', e.target.value)}
-                                                    className="w-full h-8.5 px-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200/90 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
+                                                    className="w-full h-8.5 px-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200/90 rounded-lg focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                                                 >
                                                     <option value="EVCS">EVCS (Mobil Listrik)</option>
                                                     <option value="BSS">BSS (Motor Swap)</option>
@@ -867,7 +867,7 @@ export default function StationFormModal({
                                                     value={m.power_capacity_kw}
                                                     onChange={(e) => updateMachine(idx, 'power_capacity_kw', parseInt(e.target.value) || 0)}
                                                     placeholder="60, 120, 22"
-                                                    className="w-full h-8.5 px-2.5 text-xs font-bold text-slate-900 bg-white border border-slate-200/90 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                    className="w-full h-8.5 px-2.5 text-xs font-bold text-slate-900 bg-white border border-slate-200/90 rounded-lg focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                                 />
                                             </div>
 
@@ -880,7 +880,7 @@ export default function StationFormModal({
                                                     value={m.socket_types || ''}
                                                     onChange={(e) => updateMachine(idx, 'socket_types', e.target.value)}
                                                     placeholder="2x CCS2 Fast Gun"
-                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                                 />
                                             </div>
 
@@ -893,7 +893,7 @@ export default function StationFormModal({
                                                     min="1"
                                                     value={m.slot_or_gun_count}
                                                     onChange={(e) => updateMachine(idx, 'slot_or_gun_count', parseInt(e.target.value) || 1)}
-                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                                 />
                                             </div>
 
@@ -904,7 +904,7 @@ export default function StationFormModal({
                                                 <select
                                                     value={m.status}
                                                     onChange={(e) => updateMachine(idx, 'status', e.target.value)}
-                                                    className="w-full h-8.5 px-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200/90 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
+                                                    className="w-full h-8.5 px-2.5 text-xs font-semibold text-slate-800 bg-white border border-slate-200/90 rounded-lg focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                                                 >
                                                     <option value="OPERATIONAL">OPERATIONAL</option>
                                                     <option value="MAINTENANCE">MAINTENANCE</option>
@@ -944,7 +944,7 @@ export default function StationFormModal({
                                                 onClick={() => setData('landlord_type', 'SWASTA')}
                                                 className={`h-9 px-2.5 rounded-lg text-xs font-bold border transition ${
                                                     data.landlord_type === 'SWASTA'
-                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                                                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                                 }`}
                                             >
@@ -955,7 +955,7 @@ export default function StationFormModal({
                                                 onClick={() => setData('landlord_type', 'PEMERINTAH')}
                                                 className={`h-9 px-2.5 rounded-lg text-xs font-bold border transition ${
                                                     data.landlord_type === 'PEMERINTAH'
-                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
                                                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
                                                 }`}
                                             >
@@ -973,7 +973,7 @@ export default function StationFormModal({
                                             value={data.landlord_name}
                                             onChange={(e) => setData('landlord_name', e.target.value)}
                                             placeholder="PT Danayasa / Jasa Marga / Pemda"
-                                            className="w-full h-9 px-3 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                         />
                                     </div>
 
@@ -988,7 +988,7 @@ export default function StationFormModal({
                                                 value={data.landlord_phone}
                                                 onChange={(e) => setData('landlord_phone', e.target.value)}
                                                 placeholder="0812-3456-7890"
-                                                className="w-full h-9 pl-9 pr-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                                className="w-full h-9 pl-9 pr-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                             />
                                         </div>
                                     </div>
@@ -1021,7 +1021,7 @@ export default function StationFormModal({
                                                 value={data.contract_vgreen_doc_number}
                                                 onChange={(e) => setData('contract_vgreen_doc_number', e.target.value)}
                                                 placeholder="PKS/VG-SSI/2025/001"
-                                                className="w-full h-8.5 px-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                className="w-full h-8.5 px-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2.5">
@@ -1031,7 +1031,7 @@ export default function StationFormModal({
                                                     type="date"
                                                     value={data.contract_vgreen_start_date}
                                                     onChange={(e) => setData('contract_vgreen_start_date', e.target.value)}
-                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
+                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                                                 />
                                             </div>
                                             <div>
@@ -1040,7 +1040,7 @@ export default function StationFormModal({
                                                     type="date"
                                                     value={data.contract_vgreen_end_date}
                                                     onChange={(e) => setData('contract_vgreen_end_date', e.target.value)}
-                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
+                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                                                 />
                                             </div>
                                         </div>
@@ -1059,7 +1059,7 @@ export default function StationFormModal({
                                                 value={data.contract_landlord_doc_number}
                                                 onChange={(e) => setData('contract_landlord_doc_number', e.target.value)}
                                                 placeholder="PKS/SSI-LND/2025/001"
-                                                className="w-full h-8.5 px-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                                                className="w-full h-8.5 px-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                                             />
                                         </div>
                                         <div className="grid grid-cols-2 gap-2.5">
@@ -1069,7 +1069,7 @@ export default function StationFormModal({
                                                     type="date"
                                                     value={data.contract_landlord_start_date}
                                                     onChange={(e) => setData('contract_landlord_start_date', e.target.value)}
-                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
+                                                    className="w-full h-8.5 px-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                                                 />
                                             </div>
                                             <div>
@@ -1078,7 +1078,7 @@ export default function StationFormModal({
                                                     type="date"
                                                     value={data.contract_landlord_end_date}
                                                     onChange={(e) => setData('contract_landlord_end_date', e.target.value)}
-                                                    className="w-full h-8.5 px-2.5 text-xs font-bold text-slate-900 bg-white border border-slate-200/90 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
+                                                    className="w-full h-8.5 px-2.5 text-xs font-bold text-slate-900 bg-white border border-slate-200/90 rounded-lg focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 cursor-pointer"
                                                 />
                                             </div>
                                         </div>
@@ -1103,7 +1103,7 @@ export default function StationFormModal({
                                             value={data.vendor_name}
                                             onChange={(e) => setData('vendor_name', e.target.value)}
                                             placeholder="PT Mitra Elektrik Nusantara"
-                                            className="w-full h-9 px-3 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                         />
                                     </div>
 
@@ -1116,7 +1116,7 @@ export default function StationFormModal({
                                             value={data.pln_meter_id}
                                             onChange={(e) => setData('pln_meter_id', e.target.value)}
                                             placeholder="PLN-JKT-554129"
-                                            className="w-full h-9 px-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs font-mono bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                         />
                                     </div>
 
@@ -1129,7 +1129,7 @@ export default function StationFormModal({
                                             value={data.amenities}
                                             onChange={(e) => setData('amenities', e.target.value)}
                                             placeholder="Parkir VIP, Kafe, Toilet, Musholla, CCTV 24 Jam"
-                                            className="w-full h-9 px-3 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full h-9 px-3 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                         />
                                     </div>
 
@@ -1142,7 +1142,7 @@ export default function StationFormModal({
                                             onChange={(e) => setData('internal_notes', e.target.value)}
                                             rows={2}
                                             placeholder="Rekomendasi trafo gardu, kondisi kabel tanah, akses jalan masuk..."
-                                            className="w-full p-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
+                                            className="w-full p-2.5 text-xs bg-white border border-slate-200/90 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs"
                                         />
                                     </div>
                                 </div>
@@ -1185,7 +1185,7 @@ export default function StationFormModal({
                                 <button
                                     type="button"
                                     onClick={() => setCurrentStep((currentStep + 1) as 2 | 3)}
-                                    className="h-9 px-4.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5"
+                                    className="h-9 px-4.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-2xs transition flex items-center gap-1.5"
                                 >
                                     <span>Lanjut ke Langkah {currentStep + 1}</span>
                                     <ChevronRight className="w-3.5 h-3.5" />
@@ -1194,7 +1194,7 @@ export default function StationFormModal({
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="h-9 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 disabled:opacity-50"
+                                    className="h-9 px-5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-2xs transition flex items-center gap-1.5 disabled:opacity-50"
                                 >
                                     <Save className="w-3.5 h-3.5" />
                                     <span>{isEditing ? 'Simpan Perubahan Titik' : 'Daftarkan Titik Baru'}</span>

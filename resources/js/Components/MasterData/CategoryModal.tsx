@@ -94,7 +94,7 @@ export default function CategoryModal({
                             onChange={(e) => setData('code', e.target.value.toUpperCase())}
                             placeholder="Contoh: EVCS atau BSS"
                             disabled={isEditing}
-                            className={`w-full bg-[#F8FAFC] border rounded-2xl px-3.5 py-2.5 text-xs font-mono font-bold tracking-wider text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 ${
+                            className={`w-full bg-[#F8FAFC] border rounded-2xl px-3.5 py-2.5 text-xs font-mono font-bold tracking-wider text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 ${
                                 errors.code ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
                             } ${isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                         />
@@ -118,7 +118,7 @@ export default function CategoryModal({
                             value={data.name}
                             onChange={(e) => setData('name', e.target.value)}
                             placeholder="Contoh: EVCS - Electric Vehicle Charging Station"
-                            className={`w-full bg-white border rounded-2xl px-3.5 py-2.5 text-xs text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 ${
+                            className={`w-full bg-white border rounded-2xl px-3.5 py-2.5 text-xs text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 ${
                                 errors.name ? 'border-rose-400 bg-rose-50/20' : 'border-slate-200'
                             }`}
                         />
@@ -138,7 +138,7 @@ export default function CategoryModal({
                             onChange={(e) => setData('description', e.target.value)}
                             rows={3}
                             placeholder="Tuliskan keterangan mengenai jenis perangkat atau layanan yang dinaungi..."
-                            className={`w-full bg-white border rounded-2xl px-3.5 py-2.5 text-xs text-slate-900 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 ${
+                            className={`w-full bg-white border rounded-2xl px-3.5 py-2.5 text-xs text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 ${
                                 errors.description ? 'border-rose-400' : 'border-slate-200'
                             }`}
                         />
@@ -159,7 +159,7 @@ export default function CategoryModal({
                         <button
                             type="submit"
                             disabled={processing}
-                            className="px-5 py-2.5 rounded-2xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20 transition disabled:opacity-50"
+                            className="px-5 py-2.5 rounded-2xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/20 transition disabled:opacity-50"
                         >
                             {processing ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Tambah Kategori'}
                         </button>

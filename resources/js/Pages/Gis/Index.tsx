@@ -151,7 +151,7 @@ export default function GisIndex({
     };
 
     return (
-        <div className="flex h-screen w-screen bg-[#F7F9FC] text-slate-800 font-sans overflow-hidden antialiased">
+        <div className="flex h-screen w-screen bg-canvas text-slate-800 font-sans overflow-hidden antialiased">
             <Head title="Peta GIS Nasional - V-Green SSI Platform" />
 
             {/* SIDEBAR NAVIGATION (LEBAR NORMAL w-64) */}
@@ -183,7 +183,7 @@ export default function GisIndex({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Cari stasiun, kode VG-..., kota..."
-                                className="w-full bg-white border border-[#E8ECF2] rounded-full pl-11 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 shadow-subtle focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 transition"
+                                className="w-full bg-white border border-[#E8ECF2] rounded-full pl-11 pr-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 shadow-subtle focus:outline-hidden focus:ring-2 focus:ring-blue-500/15 focus:border-blue-500 transition"
                             />
                             {searchQuery && (
                                 <button
@@ -197,7 +197,7 @@ export default function GisIndex({
 
                         {/* Notification Bell */}
                         <button 
-                            className="relative w-10 h-10 rounded-full bg-white border border-[#E8ECF2] flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-subtle hover:shadow transition"
+                            className="relative w-10 h-10 rounded-full bg-white border border-[#E8ECF2] flex items-center justify-center text-slate-600 hover:text-slate-900 shadow-subtle hover:shadow-sm transition"
                             title="Notifikasi Verifikasi"
                         >
                             <Bell className="w-4 h-4" />

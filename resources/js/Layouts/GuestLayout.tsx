@@ -19,7 +19,7 @@ export default function Guest({ children }: GuestLayoutProps) {
                 />
 
                 {/* Deep cinematic gradient overlay tailored for text contrast */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/85 to-slate-950/60 lg:bg-gradient-to-r lg:from-slate-950/95 lg:via-slate-950/80 lg:to-slate-950/50" />
+                <div className="absolute inset-0 bg-linear-to-t from-slate-950 via-slate-950/85 to-slate-950/60 lg:bg-linear-to-r lg:from-slate-950/95 lg:via-slate-950/80 lg:to-slate-950/50" />
 
                 {/* Ambient Electric Blue & Emerald Accent Glows */}
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-600/15 rounded-full blur-3xl pointer-events-none" />
@@ -31,12 +31,12 @@ export default function Guest({ children }: GuestLayoutProps) {
                 {/* Brand Header */}
                 <div>
                     <Link href="/" className="inline-flex items-center gap-3.5 group">
-                        <div className="w-12 h-12 rounded-2xl bg-[#2D60FF] text-white flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform duration-200">
+                        <div className="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform duration-200">
                             <Zap className="w-6 h-6 fill-current text-white" />
                         </div>
                         <div className="flex flex-col">
                             <span className="text-2xl font-black tracking-tight text-white leading-none">
-                                PT.SSI <span className="text-[#2D60FF]">x</span> VGREEN
+                                PT.SSI <span className="text-brand-600">x</span> VGREEN
                             </span>
                             <span className="text-xs text-slate-300 font-medium tracking-wide mt-1">
                                 Charging Station Management & GIS Platform
@@ -49,7 +49,7 @@ export default function Guest({ children }: GuestLayoutProps) {
                 <div className="my-10 lg:my-auto max-w-2xl">
                     <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight sm:leading-tight">
                         Akselerasi Infrastruktur <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-emerald-400">
+                        <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-sky-300 to-emerald-400">
                             Kendaraan Listrik Nasional
                         </span>
                     </h1>

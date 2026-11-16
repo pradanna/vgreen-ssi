@@ -65,7 +65,7 @@ export default function DeleteConfirmModal({
                         type="button"
                         onClick={onConfirm}
                         disabled={isDeleting}
-                        className="px-4 py-2 rounded-2xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-sm shadow-rose-500/20 transition disabled:opacity-50"
+                        className="px-4 py-2 rounded-2xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white flex items-center gap-1.5 shadow-xs shadow-rose-500/20 transition disabled:opacity-50"
                     >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>{isDeleting ? 'Menghapus...' : 'Ya, Hapus Data'}</span>

@@ -356,7 +356,7 @@ export default function MasterDataIndex({
     };
 
     return (
-        <div className="flex h-screen w-screen bg-[#F7F9FC] text-slate-800 font-sans overflow-hidden antialiased">
+        <div className="flex h-screen w-screen bg-canvas text-slate-800 font-sans overflow-hidden antialiased">
             <Head title="Master Data Mesin & Kategori - V-Green SSI" />
 
             {/* Unified Sinao Sidebar Navigation */}
@@ -394,13 +394,13 @@ export default function MasterDataIndex({
                 <div className="flex-1 overflow-y-auto px-8 pb-24 space-y-7">
                     {/* Flash messages or errors */}
                     {flash?.success && (
-                        <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-4 flex items-center gap-3 text-emerald-800 text-xs font-semibold shadow-xs animate-in fade-in duration-200">
+                        <div className="bg-emerald-50 border border-emerald-200/80 rounded-2xl p-4 flex items-center gap-3 text-emerald-800 text-xs font-semibold shadow-2xs animate-in fade-in duration-200">
                             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                             <span>{flash.success}</span>
                         </div>
                     )}
                     {errors?.error && (
-                        <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-4 flex items-center gap-3 text-rose-800 text-xs font-semibold shadow-xs animate-in fade-in duration-200">
+                        <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-4 flex items-center gap-3 text-rose-800 text-xs font-semibold shadow-2xs animate-in fade-in duration-200">
                             <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
                             <span>{errors.error}</span>
                         </div>
@@ -474,12 +474,12 @@ export default function MasterDataIndex({
                         {/* Tabs Bar & Action Controls */}
                         <div className="p-6 border-b border-[#EDF1F7] flex flex-col md:flex-row md:items-center justify-between gap-4">
                             {/* Tabs Switcher */}
-                            <div className="flex items-center bg-[#F1F4F9] p-1.5 rounded-2xl w-fit">
+                            <div className="flex items-center bg-canvas-subtle p-1.5 rounded-2xl w-fit">
                                 <button
                                     onClick={() => setActiveTab('machines')}
                                     className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
                                         activeTab === 'machines'
-                                            ? 'bg-white text-slate-900 shadow-xs'
+                                            ? 'bg-white text-slate-900 shadow-2xs'
                                             : 'text-slate-500 hover:text-slate-900'
                                     }`}
                                 >
@@ -490,7 +490,7 @@ export default function MasterDataIndex({
                                     onClick={() => setActiveTab('categories')}
                                     className={`px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
                                         activeTab === 'categories'
-                                            ? 'bg-white text-slate-900 shadow-xs'
+                                            ? 'bg-white text-slate-900 shadow-2xs'
                                             : 'text-slate-500 hover:text-slate-900'
                                     }`}
                                 >
@@ -509,14 +509,14 @@ export default function MasterDataIndex({
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder={activeTab === 'machines' ? 'Cari model, brand, kode SKU...' : 'Cari kategori...'}
-                                        className="w-full bg-[#F8FAFC] border border-[#E8ECF2] rounded-2xl pl-10 pr-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
+                                        className="w-full bg-[#F8FAFC] border border-[#E8ECF2] rounded-2xl pl-10 pr-3.5 py-2 text-xs text-slate-800 placeholder-slate-400 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
                                     />
                                 </div>
 
                                 {activeTab === 'machines' ? (
                                     <button
                                         onClick={handleOpenCreateMachine}
-                                        className="px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 shrink-0"
+                                        className="px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs shadow-blue-500/20 shrink-0"
                                     >
                                         <Plus className="w-4 h-4" />
                                         <span>Tambah Model Mesin</span>
@@ -524,7 +524,7 @@ export default function MasterDataIndex({
                                 ) : (
                                     <button
                                         onClick={handleOpenCreateCategory}
-                                        className="px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm shadow-blue-500/20 shrink-0"
+                                        className="px-4 py-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-xs shadow-blue-500/20 shrink-0"
                                     >
                                         <Plus className="w-4 h-4" />
                                         <span>Tambah Kategori</span>
@@ -720,7 +720,7 @@ export default function MasterDataIndex({
                                                                             <Trash2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500" />
                                                                             <span>Hapus</span>
                                                                         </span>
-                                                                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                                                                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-sm border border-amber-200/60">
                                                                             Terkunci
                                                                         </span>
                                                                     </button>
@@ -854,7 +854,7 @@ export default function MasterDataIndex({
                                                                             <Trash2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500" />
                                                                             <span>Hapus</span>
                                                                         </span>
-                                                                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                                                                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-sm border border-amber-200/60">
                                                                             Terkunci
                                                                         </span>
                                                                     </button>
@@ -979,7 +979,7 @@ export default function MasterDataIndex({
                         <button
                             type="button"
                             onClick={() => setRestrictedModalState(prev => ({ ...prev, show: false }))}
-                            className="px-5 py-2 rounded-2xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition shadow-sm"
+                            className="px-5 py-2 rounded-2xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition shadow-xs"
                         >
                             Mengerti
                         </button>
