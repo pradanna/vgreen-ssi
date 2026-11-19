@@ -55,6 +55,7 @@ class StationProjection
         // Machine list projection (Accessible by both V-Green & Internal)
         $machines = $station->machines->map(fn($m) => [
             'id' => $m->id,
+            'machine_id' => $m->machine_id,
             'name' => $m->name,
             'brand' => $m->brand,
             'model_series' => $m->model_series,
@@ -104,8 +105,10 @@ class StationProjection
                 'amenities' => $station->amenities ?? [],
                 'commissioning_date' => $station->commissioning_date?->format('d M Y'),
                 'target_completion_date' => $station->target_completion_date?->format('d M Y'),
-                'lease_end_date' => $station->lease_end_date?->format('d M Y'),
-                'landlord_name' => $station->landlord_name,
+                'contract_vgreen_start_date' => $station->contract_vgreen_start_date?->format('d M Y'),
+                'contract_vgreen_end_date' => ($station->contract_vgreen_end_date ?: $station->vgreen_contract_end_date)?->format('d M Y'),
+                'contract_vgreen_doc_number' => $station->contract_vgreen_doc_number,
+                'vgreen_contract_end_date' => ($station->contract_vgreen_end_date ?: $station->vgreen_contract_end_date)?->format('d M Y'),
                 'machines' => $machines,
                 'is_verified' => true,
                 'verified_photos' => $verifiedPhotos->map(fn($p) => [
@@ -230,6 +233,7 @@ class StationProjection
 
         $machines = $station->machines->map(fn($m) => [
             'id' => $m->id,
+            'machine_id' => $m->machine_id,
             'name' => $m->name,
             'brand' => $m->brand,
             'model_series' => $m->model_series,
@@ -274,8 +278,10 @@ class StationProjection
                 'amenities' => $station->amenities ?? [],
                 'commissioning_date' => $station->commissioning_date?->format('d M Y'),
                 'target_completion_date' => $station->target_completion_date?->format('d M Y'),
-                'lease_end_date' => $station->lease_end_date?->format('d M Y'),
-                'landlord_name' => $station->landlord_name,
+                'contract_vgreen_start_date' => $station->contract_vgreen_start_date?->format('d M Y'),
+                'contract_vgreen_end_date' => ($station->contract_vgreen_end_date ?: $station->vgreen_contract_end_date)?->format('d M Y'),
+                'contract_vgreen_doc_number' => $station->contract_vgreen_doc_number,
+                'vgreen_contract_end_date' => ($station->contract_vgreen_end_date ?: $station->vgreen_contract_end_date)?->format('d M Y'),
                 'machines' => $machines,
                 'is_verified' => true,
                 'verified_photos' => [], // loaded on demand

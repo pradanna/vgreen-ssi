@@ -157,4 +157,232 @@ class MobileRestApiTest extends TestCase
 
         $this->assertEquals($report->id, $response->json('data.report_id'));
     }
+
+    /**
+     * Vendor can fetch specific station details including machines and specs before audit.
+     */
+    public function test_vendor_can_fetch_station_details_with_machines(): void
+    {
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->getJson(route('api.v1.stations.show', ['station' => $this->station->id]));
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'station' => [
+                        'id',
+                        'code',
+                        'name',
+                        'facility_type',
+                        'status',
+                        'coordinates' => ['latitude', 'longitude'],
+                        'address',
+                        'city',
+                        'province',
+                        'machines',
+                    ],
+                ],
+            ]);
+
+        $this->assertEquals($this->station->id, $response->json('data.station.id'));
+    }
+
+    /**
+     * Vendor can submit complete inspection with condition assessment and coordinates per photo.
+     */
+    public function test_vendor_can_submit_inspection_with_condition_assessment_and_photo_coordinates(): void
+    {
+        $file1 = UploadedFile::fake()->image('depan.jpg', 800, 600);
+        $file2 = UploadedFile::fake()->image('mesin.jpg', 800, 600);
+
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->postJson(route('api.v1.stations.inspections.store', ['station' => $this->station->id]), [
+                'stage' => 'ROUTINE_PERIODIC',
+                'overall_condition' => 'BAIK',
+                'physical_condition' => 'Lahan bersih, kanopi terpasang aman, penerangan malam hari memadai.',
+                'electrical_condition' => 'Tegangan stabil 380V, PLN meter aktif, grounding < 2 ohm.',
+                'issues_found' => [
+                    'Stiker petunjuk pemakaian sedikit memudar',
+                ],
+                'machine_conditions' => [
+                    [
+                        'machine_id' => 1,
+                        'status' => 'OPERATIONAL',
+                        'notes' => 'Gun charger CCS2 berfungsi normal',
+                    ],
+                ],
+                'latitude' => $this->station->latitude,
+                'longitude' => $this->station->longitude,
+                'notes' => 'Pemeriksaan berkala selesai, kondisi siap pakai.',
+                'photo_LAHAN_DEPAN' => $file1,
+                'lat_LAHAN_DEPAN' => $this->station->latitude,
+                'lng_LAHAN_DEPAN' => $this->station->longitude,
+                'photo_MESIN_DEPAN' => $file2,
+                'lat_MESIN_DEPAN' => $this->station->latitude,
+                'lng_MESIN_DEPAN' => $this->station->longitude,
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'report_id',
+                    'station_code',
+                    'stage',
+                    'overall_condition',
+                    'distance_meters',
+                    'approval_status',
+                    'photos_count',
+                ],
+            ]);
+
+        $reportId = $response->json('data.report_id');
+        $report = InspectionReport::with('photos')->find($reportId);
+
+        $this->assertNotNull($report);
+        $this->assertEquals('BAIK', $report->overall_condition);
+        $this->assertEquals('ROUTINE_PERIODIC', $report->stage);
+        $this->assertNotNull($report->physical_condition);
+        $this->assertNotNull($report->electrical_condition);
+        $this->assertContains('Stiker petunjuk pemakaian sedikit memudar', $report->issues_found);
+
+        // Verify photo coordinates and distance audit
+        $lahanPhoto = $report->photos->where('checklist_slot_id', 'LAHAN_DEPAN')->first();
+        $this->assertNotNull($lahanPhoto);
+        $this->assertEquals((float) $this->station->latitude, $lahanPhoto->latitude);
+        $this->assertEquals((float) $this->station->longitude, $lahanPhoto->longitude);
+        $this->assertNotNull($lahanPhoto->distance_meters);
+    }
+
+    /**
+     * Vendor can fetch inspection history and filter by status.
+     */
+    public function test_vendor_can_fetch_inspection_history(): void
+    {
+        InspectionReport::create([
+            'station_id' => $this->station->id,
+            'submitted_by' => $this->surveyor->id,
+            'approval_status_id' => ApprovalStatus::PENDING_REVIEW,
+            'stage' => 'INITIAL_SURVEY',
+            'overall_condition' => 'BAIK',
+            'submitted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->getJson(route('api.v1.inspections.history'));
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'total',
+                    'reports' => [
+                        '*' => [
+                            'id',
+                            'station' => ['id', 'code', 'name', 'city', 'province'],
+                            'stage',
+                            'overall_condition',
+                            'approval_status' => ['id', 'name'],
+                            'photos_count',
+                            'submitted_at',
+                        ],
+                    ],
+                ],
+            ]);
+
+        $this->assertGreaterThanOrEqual(1, $response->json('data.total'));
+    }
+
+    /**
+     * Vendor can fetch detailed inspection report with condition and photos.
+     */
+    public function test_vendor_can_fetch_detailed_inspection_report_with_conditions(): void
+    {
+        $report = InspectionReport::create([
+            'station_id' => $this->station->id,
+            'submitted_by' => $this->surveyor->id,
+            'approval_status_id' => ApprovalStatus::PENDING_REVIEW,
+            'stage' => 'CONSTRUCTION_PROGRESS',
+            'overall_condition' => 'CUKUP',
+            'physical_condition' => 'Pengecoran selesai, tinggal pengecatan marka.',
+            'electrical_condition' => 'Kabel ducting terpasang.',
+            'issues_found' => ['Perlu perapian sampah sisa kabel'],
+            'latitude' => $this->station->latitude,
+            'longitude' => $this->station->longitude,
+            'distance_meters' => 5.2,
+            'submitted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->getJson(route('api.v1.inspections.show', ['report' => $report->id]));
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'report_id',
+                    'station',
+                    'stage',
+                    'overall_condition',
+                    'physical_condition',
+                    'electrical_condition',
+                    'issues_found',
+                    'submission_gps' => ['latitude', 'longitude', 'distance_meters'],
+                    'approval_status',
+                    'photos',
+                ],
+            ]);
+
+        $this->assertEquals('CUKUP', $response->json('data.overall_condition'));
+        $this->assertEquals('Pengecoran selesai, tinggal pengecatan marka.', $response->json('data.physical_condition'));
+    }
+
+    /**
+     * Vendor can resubmit revised report and photos when revision required.
+     */
+    public function test_vendor_can_resubmit_inspection_when_revision_required(): void
+    {
+        $report = InspectionReport::create([
+            'station_id' => $this->station->id,
+            'submitted_by' => $this->surveyor->id,
+            'approval_status_id' => ApprovalStatus::REVISION_REQUIRED,
+            'stage' => 'CONSTRUCTION_PROGRESS',
+            'overall_condition' => 'RUSAK_RINGAN',
+            'rejection_reason' => 'Foto panel buram dan belum ada MCB cadangan',
+            'submitted_at' => now()->subDay(),
+        ]);
+
+        $newFile = UploadedFile::fake()->image('panel_rev.jpg', 800, 600);
+
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->postJson(route('api.v1.inspections.resubmit', ['report' => $report->id]), [
+                'overall_condition' => 'BAIK',
+                'electrical_condition' => 'MCB cadangan sudah dipasang dan diberi label rapi.',
+                'notes' => 'Perbaikan panel selesai dan foto ulang terlampir.',
+                'photo_PANEL_DEPAN' => $newFile,
+                'lat_PANEL_DEPAN' => $this->station->latitude,
+                'lng_PANEL_DEPAN' => $this->station->longitude,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'report_id',
+                    'approval_status',
+                    'submitted_at',
+                ],
+            ]);
+
+        $report->refresh();
+        $this->assertEquals(ApprovalStatus::PENDING_REVIEW, $report->approval_status_id);
+        $this->assertEquals('BAIK', $report->overall_condition);
+        $this->assertNull($report->rejection_reason);
+    }
 }

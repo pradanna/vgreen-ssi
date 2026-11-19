@@ -20,9 +20,15 @@ Route::prefix('v1')->group(function () {
         Route::post('/auth/logout', [AuthController::class, 'logout'])->name('api.v1.auth.logout');
         Route::get('/auth/me', [AuthController::class, 'me'])->name('api.v1.auth.me');
 
-        // Field Assignments & Inspections
+        // Field Assignments & Stations
         Route::get('/assignments', [MobileInspectionController::class, 'assignments'])->name('api.v1.assignments');
+        Route::get('/stations/{station}', [MobileInspectionController::class, 'showStation'])->name('api.v1.stations.show');
+
+        // Field Inspections & Reporting
+        Route::get('/inspections', [MobileInspectionController::class, 'history'])->name('api.v1.inspections.history');
         Route::post('/stations/{station}/inspections', [MobileInspectionController::class, 'storeInspection'])->name('api.v1.stations.inspections.store');
+        Route::get('/inspections/{report}', [MobileInspectionController::class, 'getInspectionStatus'])->name('api.v1.inspections.show');
         Route::get('/inspections/{report}/status', [MobileInspectionController::class, 'getInspectionStatus'])->name('api.v1.inspections.status');
+        Route::post('/inspections/{report}/resubmit', [MobileInspectionController::class, 'resubmitInspection'])->name('api.v1.inspections.resubmit');
     });
 });

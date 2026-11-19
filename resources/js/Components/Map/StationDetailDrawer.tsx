@@ -690,47 +690,85 @@ export default function StationDetailDrawer({
                                 </div>
                             </div>
 
-                            {/* 3. DATA PEMILIK LAHAN */}
-                            <div>
-                                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-                                    <Building2 className="w-3.5 h-3.5 text-blue-600" />
-                                    Data Pemilik Lahan
-                                </h3>
-                                <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 text-xs shadow-2xs">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-slate-500">Nama Pemilik:</span>
-                                        <span className="font-bold text-slate-900 text-right">
-                                            {station.landlord_name || 'Mitra Pengelola Lahan Terverifikasi'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-slate-500">Tipe Kepemilikan:</span>
-                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                            (station.ownership_type === 'NEGERI_BUMN' || station.landlord_type === 'PEMERINTAH')
-                                                ? 'bg-purple-50 text-purple-700 border border-purple-200/60'
-                                                : 'bg-blue-50 text-blue-700 border border-blue-200/60'
-                                        }`}>
-                                            {(station.ownership_type === 'NEGERI_BUMN' || station.landlord_type === 'PEMERINTAH') ? 'Negeri / BUMN' : 'Swasta'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
-                                        <span className="text-slate-500">Nomor Telepon:</span>
-                                        {station.landlord_phone ? (
-                                            <a 
-                                                href={`https://wa.me/${station.landlord_phone.replace(/[^0-9]/g, '')}`} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="text-emerald-600 hover:text-emerald-700 font-mono font-bold hover:underline flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60"
-                                            >
-                                                <Phone className="w-3.5 h-3.5" />
-                                                <span>{station.landlord_phone}</span>
-                                            </a>
-                                        ) : (
-                                            <span className="font-mono text-slate-400">-</span>
-                                        )}
+                            {/* 3. KONTRAK KERJASAMA PT SSI & V-GREEN (KHUSUS V-GREEN) */}
+                            {isVGreen && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                        <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                        Kontrak Kerjasama PT SSI &amp; V-Green
+                                    </h3>
+                                    <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 text-xs shadow-2xs">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-slate-500">Mitra Operasional Lapangan:</span>
+                                            <span className="font-bold text-slate-900 text-right">
+                                                PT SSI (Sentral Solusi Inovasi)
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-slate-500">Nomor Dokumen Kontrak:</span>
+                                            <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60 text-[11px]">
+                                                {station.contract_vgreen_doc_number || `PKS/VG-SSI/2025/${String(station.id).padStart(4, '0')}`}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
+                                            <span className="text-slate-500">Masa Berlaku Kontrak:</span>
+                                            <div className="text-right">
+                                                <div className="font-semibold text-slate-800">
+                                                    {station.contract_vgreen_start_date ? `${station.contract_vgreen_start_date} s/d ` : ''}
+                                                    <span className="text-emerald-700 font-bold">
+                                                        {station.contract_vgreen_end_date || station.vgreen_contract_end_date || 'Aktif Jangka Panjang'}
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-slate-400">Kontrak Operasional Resmi</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
+
+                            {/* 3. DATA PEMILIK LAHAN (HANYA INTERNAL PT SSI - DIBATASI DARI V-GREEN) */}
+                            {isInternal && (
+                                <div>
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                                        <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                                        Data Pemilik Lahan
+                                    </h3>
+                                    <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2.5 text-xs shadow-2xs">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-slate-500">Nama Pemilik:</span>
+                                            <span className="font-bold text-slate-900 text-right">
+                                                {station.landlord_name || 'Mitra Pengelola Lahan Terverifikasi'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-slate-500">Tipe Kepemilikan:</span>
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                (station.ownership_type === 'NEGERI_BUMN' || station.landlord_type === 'PEMERINTAH')
+                                                    ? 'bg-purple-50 text-purple-700 border border-purple-200/60'
+                                                    : 'bg-blue-50 text-blue-700 border border-blue-200/60'
+                                            }`}>
+                                                {(station.ownership_type === 'NEGERI_BUMN' || station.landlord_type === 'PEMERINTAH') ? 'Negeri / BUMN' : 'Swasta'}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
+                                            <span className="text-slate-500">Nomor Telepon:</span>
+                                            {station.landlord_phone ? (
+                                                <a 
+                                                    href={`https://wa.me/${station.landlord_phone.replace(/[^0-9]/g, '')}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-emerald-600 hover:text-emerald-700 font-mono font-bold hover:underline flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60"
+                                                >
+                                                    <Phone className="w-3.5 h-3.5" />
+                                                    <span>{station.landlord_phone}</span>
+                                                </a>
+                                            ) : (
+                                                <span className="font-mono text-slate-400">-</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
 

@@ -31,6 +31,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/stations/{station}/inspections/{report}/review', [StationController::class, 'reviewInspection'])->name('stations.inspections.review');
     Route::post('/stations/{station}/inspections', [StationController::class, 'submitInspection'])->name('stations.inspections.submit');
 
+    // Geolocations & POI Search
+    Route::get('/geo/search', [StationController::class, 'searchLocation'])->name('geo.search');
+
     // Milestone 5: Station Management & Data Portability (Admin PT SSI)
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/stations/generate-code', [StationManagementController::class, 'generateCode'])->name('stations.generate-code');

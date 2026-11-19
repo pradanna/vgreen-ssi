@@ -36,4 +36,25 @@ class GeoCoordinate
             'longitude' => $this->longitude,
         ];
     }
+
+    /**
+     * Calculate great-circle distance between this coordinate and another coordinate in meters (Haversine formula).
+     */
+    public function distanceTo(float $latitude, float $longitude): float
+    {
+        $earthRadius = 6371000; // in meters
+
+        $latFrom = deg2rad($this->latitude);
+        $lonFrom = deg2rad($this->longitude);
+        $latTo = deg2rad($latitude);
+        $lonTo = deg2rad($longitude);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $angle = 2 * asin(sqrt(pow(sin($latDelta / 2), 2) +
+            cos($latFrom) * cos($latTo) * pow(sin($lonDelta / 2), 2)));
+
+        return round($angle * $earthRadius, 2);
+    }
 }

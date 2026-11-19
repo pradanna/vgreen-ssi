@@ -50,7 +50,8 @@ import {
     CheckCircle2,
     AlertTriangle,
     MoreVertical,
-    Eye
+    Eye,
+    Target
 } from 'lucide-react';
 
 interface DashboardProps extends PageProps {
@@ -592,17 +593,17 @@ export default function Dashboard({
                             {activeNav === 'gis'
                                 ? 'Peta GIS Sebaran Nasional' 
                                 : activeNav === 'stations' 
-                                ? 'Daftar Titik Stasiun & Kelola Aset'
+                                ? (isVGreen ? 'Katalog Titik Stasiun Terverifikasi' : 'Daftar Titik Stasiun & Kelola Aset')
                                 : activeNav === 'inspections'
                                 ? 'Sesi Verifikasi & Audit QC Lapangan'
-                                : 'Ringkasan Infrastruktur'}
+                                : (isVGreen ? 'Executive Monitoring Jaringan V-Green' : 'Ringkasan Infrastruktur')}
                         </h1>
 
                         {activeNav === 'stations' && (
                             <div className="hidden sm:flex items-center gap-2">
                                 <span className="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-700 font-bold text-xs border border-blue-200/60 flex items-center gap-1.5 shadow-2xs">
                                     <TableIcon className="w-3.5 h-3.5" />
-                                    <span>Tabel Master Titik Stasiun</span>
+                                    <span>{isVGreen ? 'Tabel Stasiun Terverifikasi' : 'Tabel Master Titik Stasiun'}</span>
                                 </span>
                             </div>
                         )}
@@ -640,32 +641,12 @@ export default function Dashboard({
                 </header>
 
                 {/* SCROLLABLE DASHBOARD BODY */}
-                <div className="flex-1 overflow-y-auto px-8 pb-28 space-y-7">
-                    {/* Banner for QC / Inspection view */}
-                    {activeNav === 'inspections' && (
-                        <div className="bg-blue-50/80 border border-blue-200/80 rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs">
-                            <div className="flex items-center gap-3.5">
-                                <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                                    <ShieldCheck className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-slate-900">Modul Verifikasi & Quality Control Lapangan (PT SSI)</h4>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        Tinjau 7 sudut foto bukti fisik per stasiun sebelum mempublikasikan status ke perwakilan V-Green.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                                <span className="text-xs font-bold px-3 py-1.5 bg-white text-blue-700 border border-blue-200 rounded-full shadow-2xs">
-                                    {stats.construction + stats.surveyed} Titik Memerlukan Audit
-                                </span>
-                            </div>
-                        </div>
-                    )}
+                <div className="@container flex-1 overflow-y-auto px-8 pb-28">
+                <div className={`space-y-7 ${activeNav === 'dashboard' ? 'fluid-scope' : ''}`}>
 
                     {/* TOP METRICS ROW (4 CARDS) - EXECUTIVE DIRECTOR LENS (Visible on Dashboard) */}
                     {activeNav === 'dashboard' && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 @lg:grid-cols-2 @4xl:grid-cols-4 gap-6">
                         {/* CARD 1: Total Jaringan Stasiun */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
@@ -673,7 +654,7 @@ export default function Dashboard({
                                     <span className="text-xs font-semibold text-slate-400 tracking-normal">
                                         Total Jaringan Stasiun
                                     </span>
-                                    <span className="inline-flex items-center text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                                    <span className="inline-flex items-center text-2xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
                                         Portofolio Aktif <ArrowUpRight className="w-3 h-3 ml-0.5" />
                                     </span>
                                 </div>
@@ -720,7 +701,7 @@ export default function Dashboard({
                                     <span className="text-xs font-semibold text-slate-400 tracking-normal">
                                         Dalam Pembangunan
                                     </span>
-                                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100/60">
+                                    <span className="inline-flex items-center gap-1.5 text-2xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100/60">
                                         <Hammer className="w-3 h-3 text-blue-600" />
                                         <span>Fisik Aktif</span>
                                     </span>
@@ -768,7 +749,7 @@ export default function Dashboard({
                                     <span className="text-xs font-semibold text-slate-400 tracking-normal">
                                         Stasiun Beroperasi
                                     </span>
-                                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100/60">
+                                    <span className="inline-flex items-center gap-1.5 text-2xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100/60">
                                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                                         <span>Live Ready</span>
                                     </span>
@@ -794,7 +775,7 @@ export default function Dashboard({
                                     </div>
                                 </div>
 
-                                <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+                                <div className="pt-1 flex items-center justify-between text-2xs text-slate-400 font-medium">
                                     <span className="flex items-center gap-1.5 text-slate-600">
                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                         Terhubung PLN & Komisioning
@@ -804,15 +785,15 @@ export default function Dashboard({
                             </div>
                         </div>
 
-                        {/* CARD 4: Monitoring Kontrak Jatuh Tempo */}
+                        {/* CARD 4: Monitoring Kontrak Jatuh Tempo (Landlord Restricted from V-Green) */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-semibold text-slate-400 tracking-normal">
                                         Masa Kontrak Jatuh Tempo
                                     </span>
-                                    <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${
-                                        totalExpiringContracts > 0 
+                                    <span className={`inline-flex items-center gap-1 text-2xs font-bold px-2.5 py-0.5 rounded-full border ${
+                                        (isVGreen ? vgreenExpiring : totalExpiringContracts) > 0 
                                             ? 'text-amber-700 bg-amber-50 border-amber-200/60' 
                                             : 'text-slate-600 bg-slate-50 border-slate-200/60'
                                     }`}>
@@ -822,45 +803,52 @@ export default function Dashboard({
                                 </div>
                                 <div className="mt-2">
                                     <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                                        {totalExpiringContracts} Kontrak
+                                        {isVGreen ? vgreenExpiring : totalExpiringContracts} Kontrak
                                     </span>
                                 </div>
                             </div>
 
                             <div className="space-y-3 pt-6">
-                                {/* Baris 1: Kontrak dengan V-Green */}
+                                {/* Baris 1: Kontrak dengan PT SSI (Untuk V-Green hanya 1 garis ini) */}
                                 <div>
                                     <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
                                         <span className="text-slate-500 flex items-center gap-1.5">
                                             <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
-                                            Kontrak dengan V-Green (&lt; 90 Hari)
+                                            {isVGreen ? 'Kontrak dengan PT SSI (< 90 Hari)' : 'Kontrak dengan V-Green (< 90 Hari)'}
                                         </span>
                                         <span className="text-blue-700 font-bold">{vgreenExpiring} Kontrak</span>
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
                                             className="h-full bg-blue-600 rounded-full transition-all duration-500" 
-                                            style={{ width: `${(vgreenExpiring / (totalExpiringContracts || 1)) * 100}%` }}
+                                            style={{ width: isVGreen ? `${Math.min(100, Math.round((vgreenExpiring / (stats.operational || 1)) * 100))}%` : `${(vgreenExpiring / (totalExpiringContracts || 1)) * 100}%` }}
                                         />
                                     </div>
+                                    {isVGreen && (
+                                        <div className="text-3xs text-slate-400 mt-1.5 font-medium">
+                                            {vgreenExpiring} dari {stats.operational} stasiun operasional mendekati batas waktu kontrak
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Baris 2: Kontrak dengan Pemilik Lahan */}
-                                <div>
-                                    <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
-                                        <span className="text-slate-500 flex items-center gap-1.5">
-                                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                                            Kontrak dengan Pemilik Lahan (&lt; 90 Hari)
-                                        </span>
-                                        <span className="text-amber-600 font-bold">{landlordExpiring} Kontrak</span>
+                                {/* Baris 2 Internal: Kontrak dengan Pemilik Lahan (Hanya Internal PT SSI) */}
+                                {isInternal && (
+                                    <div>
+                                        <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
+                                            <span className="text-slate-500 flex items-center gap-1.5">
+                                                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                                                Kontrak dengan Pemilik Lahan (&lt; 90 Hari)
+                                            </span>
+                                            <span className="text-amber-600 font-bold">{landlordExpiring} Kontrak</span>
+                                        </div>
+                                        <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div 
+                                                className="h-full bg-amber-500 rounded-full transition-all duration-500" 
+                                                style={{ width: `${(landlordExpiring / (totalExpiringContracts || 1)) * 100}%` }}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-amber-500 rounded-full transition-all duration-500" 
-                                            style={{ width: `${(landlordExpiring / (totalExpiringContracts || 1)) * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -875,11 +863,11 @@ export default function Dashboard({
                                     <MapPin className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="text-[11px] font-semibold text-slate-400">Total Titik Stasiun</div>
+                                    <div className="text-2xs font-semibold text-slate-400">Total Titik Stasiun</div>
                                     <div className="text-xl font-extrabold text-slate-900 leading-tight">
                                         {stats.total} <span className="text-xs font-semibold text-slate-500">Titik</span>
                                     </div>
-                                    <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                                    <div className="text-3xs text-slate-500 truncate mt-0.5">
                                         <span className="text-emerald-600 font-bold">{stats.operational} Live</span> • {stats.construction} WIP • {stats.surveyed} Survei
                                     </div>
                                 </div>
@@ -891,11 +879,11 @@ export default function Dashboard({
                                     <Cpu className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="text-[11px] font-semibold text-slate-400">Total Mesin Terpasang</div>
+                                    <div className="text-2xs font-semibold text-slate-400">Total Mesin Terpasang</div>
                                     <div className="text-xl font-extrabold text-slate-900 leading-tight">
                                         {totalMachines.toLocaleString()} <span className="text-xs font-semibold text-slate-500">Unit</span>
                                     </div>
-                                    <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                                    <div className="text-3xs text-slate-500 truncate mt-0.5">
                                         {totalSlots.toLocaleString()} Total Slot & Gun Charger
                                     </div>
                                 </div>
@@ -907,12 +895,20 @@ export default function Dashboard({
                                     <FileText className="w-5 h-5" />
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="text-[11px] font-semibold text-slate-400">Kontrak Sewa (&lt;90 Hari)</div>
-                                    <div className="text-xl font-extrabold text-slate-900 leading-tight">
-                                        {totalExpiringContracts} <span className="text-xs font-semibold text-amber-600">Kontrak</span>
+                                    <div className="text-2xs font-semibold text-slate-400">
+                                        {isVGreen ? 'Kontrak PT SSI (< 90 Hari)' : 'Kontrak Sewa (<90 Hari)'}
                                     </div>
-                                    <div className="text-[10px] text-slate-500 truncate mt-0.5">
-                                        <span className="font-semibold text-slate-700">{vgreenExpiring} PKS V-Green</span> • <span className="font-semibold text-slate-700">{landlordExpiring} Sewa Lahan</span>
+                                    <div className="text-xl font-extrabold text-slate-900 leading-tight">
+                                        {isVGreen ? vgreenExpiring : totalExpiringContracts} <span className="text-xs font-semibold text-amber-600">Kontrak</span>
+                                    </div>
+                                    <div className="text-3xs text-slate-500 truncate mt-0.5">
+                                        {isVGreen ? (
+                                            <span className="font-semibold text-slate-700">{vgreenExpiring} Kontrak Mendekati Jatuh Tempo</span>
+                                        ) : (
+                                            <>
+                                                <span className="font-semibold text-slate-700">{vgreenExpiring} Kontrak V-Green</span> • <span className="font-semibold text-slate-700">{landlordExpiring} Sewa Lahan</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -925,7 +921,7 @@ export default function Dashboard({
                                     {isInternal ? <ShieldCheck className="w-5 h-5" /> : <BatteryCharging className="w-5 h-5" />}
                                 </div>
                                 <div className="min-w-0">
-                                    <div className="text-[11px] font-semibold text-slate-400">
+                                    <div className="text-2xs font-semibold text-slate-400">
                                         {isInternal ? 'Kepatuhan Legalitas' : 'Kesiapan Operasi'}
                                     </div>
                                     <div className="text-xl font-extrabold text-slate-900 leading-tight">
@@ -940,7 +936,7 @@ export default function Dashboard({
                                             '99.4% Uptime'
                                         )}
                                     </div>
-                                    <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                                    <div className="text-3xs text-slate-500 truncate mt-0.5">
                                         {isInternal ? 'Dokumen legal & sewaan lengkap' : 'Kesiapan jaringan charging'}
                                     </div>
                                 </div>
@@ -952,7 +948,7 @@ export default function Dashboard({
                     {activeNav === 'dashboard' && (
                     <>
                     <div className="bg-white rounded-3xl p-7 border border-[#EDF1F7] shadow-card space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex flex-col @xl:flex-row @xl:items-center justify-between gap-4">
                             <div>
                                 <h2 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                                     <span>Laju Implementasi Jaringan Stasiun (Target vs Realisasi)</span>
@@ -967,7 +963,7 @@ export default function Dashboard({
                                     <span className="text-xl font-extrabold text-slate-900 tracking-tight">
                                         {currentChartTarget.toLocaleString('id-ID')} Titik Target
                                     </span>
-                                    <span className="inline-flex items-center text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100/60">
+                                    <span className="inline-flex items-center text-2xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100/60">
                                         {currentChartActualLive} Live ({currentChartPercent}% On-Schedule) <ArrowUpRight className="w-3 h-3 ml-0.5" />
                                     </span>
                                 </div>
@@ -1168,7 +1164,7 @@ export default function Dashboard({
                                     <div key={index} className="flex-1 flex flex-col items-center justify-end h-full group relative cursor-pointer">
                                         {/* Floating Interactive Tooltip */}
                                         <div className="opacity-0 group-hover:opacity-100 pointer-events-none absolute -top-16 bg-slate-900/95 backdrop-blur-xs text-white px-3.5 py-2.5 rounded-xl shadow-xl transition-all duration-200 whitespace-nowrap z-30 flex flex-col items-center border border-slate-700/50">
-                                            <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">{d.month} 2026</span>
+                                            <span className="text-3xs text-slate-300 font-bold uppercase tracking-wider">{d.month} 2026</span>
                                             <div className="flex items-center gap-2 mt-0.5 text-xs">
                                                 <span className="text-emerald-400 font-extrabold">
                                                     {d.actual !== null ? `${d.actual.toLocaleString('id-ID')} Live` : 'Proyeksi'}
@@ -1177,7 +1173,7 @@ export default function Dashboard({
                                                 <span className="text-slate-300">Plafon: {d.planned.toLocaleString('id-ID')}</span>
                                             </div>
                                             {d.actual !== null && (
-                                                <div className="text-[10px] text-blue-300 font-medium mt-0.5">
+                                                <div className="text-3xs text-blue-300 font-medium mt-0.5">
                                                     Sisa {Math.max(0, d.planned - d.actual).toLocaleString('id-ID')} titik lagi ({Math.round((d.actual / (d.planned || 1)) * 100)}%)
                                                 </div>
                                             )}
@@ -1205,12 +1201,12 @@ export default function Dashboard({
                     </div>
 
                     {/* EXECUTIVE INSIGHTS: LEADERBOARD & ECOSYSTEM COMPOSITION */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        {/* LEFT COLUMN: PROVINCIAL PROGRESS LEADERBOARD (lg:col-span-7) */}
-                        <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border border-[#EDF1F7] shadow-card flex flex-col justify-between space-y-6">
+                    <div className="grid grid-cols-1 @3xl:grid-cols-12 gap-6">
+                        {/* LEFT COLUMN: PROVINCIAL PROGRESS LEADERBOARD (@3xl:col-span-7) */}
+                        <div className="@3xl:col-span-7 bg-white rounded-3xl p-6 @xl:p-7 border border-[#EDF1F7] shadow-card flex flex-col justify-between space-y-6">
                             <div>
                                 {/* Header with Title and Toggle */}
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                                <div className="flex flex-col @xl:flex-row @xl:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                                     <div>
                                         <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                                             <TrendingUp className="w-4 h-4 text-blue-600" />
@@ -1222,7 +1218,7 @@ export default function Dashboard({
                                     </div>
 
                                     {/* Segmented Filter Pills */}
-                                    <div className="flex items-center bg-[#F4F5F8] p-1 rounded-full text-xs font-semibold text-slate-500 self-start sm:self-auto">
+                                    <div className="flex items-center bg-[#F4F5F8] p-1 rounded-full text-xs font-semibold text-slate-500 self-start @xl:self-auto">
                                         <button
                                             onClick={() => setLeaderboardTab('live')}
                                             className={`px-3 py-1 rounded-full transition ${
@@ -1290,7 +1286,7 @@ export default function Dashboard({
                                                                     {prov.province_name}
                                                                 </span>
                                                                 {prov.region && (
-                                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 hidden sm:inline">
+                                                                    <span className="text-3xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 hidden @xl:inline">
                                                                         {prov.region}
                                                                     </span>
                                                                 )}
@@ -1332,7 +1328,7 @@ export default function Dashboard({
                                                         </div>
 
                                                         {/* Target Allocation Sub-metric */}
-                                                        <div className="flex items-center justify-end text-[11px] text-slate-400 font-medium mt-1.5">
+                                                        <div className="flex items-center justify-end text-2xs text-slate-400 font-medium mt-1.5">
                                                             <span>Target: {prov.target_evcs || 0} EVCS / {prov.target_bss || 0} BSS</span>
                                                         </div>
                                                     </div>
@@ -1358,10 +1354,10 @@ export default function Dashboard({
                             </div>
                         </div>
 
-                        {/* RIGHT COLUMN: ECOSYSTEM COMPOSITION & RISK WATCHLIST (lg:col-span-5) */}
-                        <div className="lg:col-span-5 flex flex-col gap-6">
+                        {/* RIGHT COLUMN: ECOSYSTEM COMPOSITION & RISK WATCHLIST (@3xl:col-span-5) */}
+                        <div className="@3xl:col-span-5 flex flex-col gap-6">
                             {/* CARD 1: KOMPOSISI FASILITAS & KAPASITAS DAYA */}
-                            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDF1F7] shadow-card space-y-4">
+                            <div className="bg-white rounded-3xl p-6 @xl:p-7 border border-[#EDF1F7] shadow-card space-y-4">
                                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                     <div>
                                         <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
@@ -1389,7 +1385,7 @@ export default function Dashboard({
                                                 <div className="text-xs font-bold text-slate-900">
                                                     EVCS (Charging Mobil)
                                                 </div>
-                                                <div className="text-[11px] text-slate-400">
+                                                <div className="text-2xs text-slate-400">
                                                     {stats.construction_evcs || 0} titik sedang konstruksi
                                                 </div>
                                             </div>
@@ -1398,7 +1394,7 @@ export default function Dashboard({
                                             <div className="text-sm font-extrabold text-slate-900">
                                                 {stats.operational_evcs ?? 200} <span className="text-xs font-normal text-slate-400">Titik</span>
                                             </div>
-                                            <div className="text-[11px] font-bold text-blue-600">
+                                            <div className="text-2xs font-bold text-blue-600">
                                                 {Math.round(((stats.operational_evcs ?? 200) / (stats.operational || 1)) * 100)}%
                                             </div>
                                         </div>
@@ -1414,7 +1410,7 @@ export default function Dashboard({
                                                 <div className="text-xs font-bold text-slate-900">
                                                     Hub Terintegrasi (EVCS + BSS)
                                                 </div>
-                                                <div className="text-[11px] text-slate-400">
+                                                <div className="text-2xs text-slate-400">
                                                     {stats.construction_combined || 0} titik sedang konstruksi
                                                 </div>
                                             </div>
@@ -1423,7 +1419,7 @@ export default function Dashboard({
                                             <div className="text-sm font-extrabold text-slate-900">
                                                 {stats.operational_combined ?? 71} <span className="text-xs font-normal text-slate-400">Titik</span>
                                             </div>
-                                            <div className="text-[11px] font-bold text-purple-600">
+                                            <div className="text-2xs font-bold text-purple-600">
                                                 {Math.round(((stats.operational_combined ?? 71) / (stats.operational || 1)) * 100)}%
                                             </div>
                                         </div>
@@ -1439,7 +1435,7 @@ export default function Dashboard({
                                                 <div className="text-xs font-bold text-slate-900">
                                                     BSS (Swap Baterai Motor)
                                                 </div>
-                                                <div className="text-[11px] text-slate-400">
+                                                <div className="text-2xs text-slate-400">
                                                     {stats.construction_bss || 0} titik sedang konstruksi
                                                 </div>
                                             </div>
@@ -1448,7 +1444,7 @@ export default function Dashboard({
                                             <div className="text-sm font-extrabold text-slate-900">
                                                 {stats.operational_bss ?? 56} <span className="text-xs font-normal text-slate-400">Titik</span>
                                             </div>
-                                            <div className="text-[11px] font-bold text-emerald-600">
+                                            <div className="text-2xs font-bold text-emerald-600">
                                                 {Math.round(((stats.operational_bss ?? 56) / (stats.operational || 1)) * 100)}%
                                             </div>
                                         </div>
@@ -1458,115 +1454,195 @@ export default function Dashboard({
                                 {/* Total Connected PLN Power & Slots (Real Live Data) */}
                                 <div className="p-3.5 rounded-2xl bg-linear-to-r from-blue-50/70 to-indigo-50/70 border border-blue-100 flex items-center justify-between text-xs">
                                     <div>
-                                        <span className="font-semibold text-slate-600 block text-[11px]">Total Daya Terpasang PLN (Live):</span>
+                                        <span className="font-semibold text-slate-600 block text-2xs">Total Daya Terpasang PLN (Live):</span>
                                         <span className="text-base font-extrabold text-slate-900">
                                             {((stats.live_power_kw || stats.total_power_kw || 0) / 1000).toFixed(1)} <span className="text-xs font-bold text-slate-500">MW</span>
                                         </span>
-                                        <span className="text-[11px] text-slate-400 ml-1.5">({(stats.live_power_kw || stats.total_power_kw || 0).toLocaleString('id-ID')} kW)</span>
+                                        <span className="text-2xs text-slate-400 ml-1.5">({(stats.live_power_kw || stats.total_power_kw || 0).toLocaleString('id-ID')} kW)</span>
                                     </div>
                                     <div className="text-right">
-                                        <span className="font-semibold text-slate-600 block text-[11px]">Slot & Gun Aktif (Live):</span>
+                                        <span className="font-semibold text-slate-600 block text-2xs">Slot & Gun Aktif (Live):</span>
                                         <span className="text-sm font-extrabold text-blue-700">
-                                            {(stats.live_slots || stats.total_slots || 0).toLocaleString('id-ID')} <span className="text-[11px] font-semibold text-slate-500">Unit</span>
+                                            {(stats.live_slots || stats.total_slots || 0).toLocaleString('id-ID')} <span className="text-2xs font-semibold text-slate-500">Unit</span>
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* CARD 2: EARLY WARNING & RISK WATCHLIST */}
-                            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#EDF1F7] shadow-card space-y-4">
+                            {/* CARD 2: EARLY WARNING & RISK WATCHLIST / KESIAPAN KEMITRAAN */}
+                            <div className="bg-white rounded-3xl p-6 @xl:p-7 border border-[#EDF1F7] shadow-card space-y-4">
                                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                     <div>
                                         <h3 className="text-base font-bold text-slate-900 tracking-tight flex items-center gap-2">
                                             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                                            <span>Watchlist Kepatuhan & Risiko</span>
+                                            <span>{isVGreen ? 'Monitoring Kemitraan & Kesiapan' : 'Watchlist Kepatuhan & Risiko'}</span>
                                         </h3>
                                         <p className="text-xs text-slate-400 mt-0.5">
-                                            Early warning system operasional & legalitas
+                                            {isVGreen ? 'Pemantauan kontrak, kesiapan operasi, dan target sebaran' : 'Early warning system operasional & legalitas'}
                                         </p>
                                     </div>
-                                    <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                                    <span className="text-2xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
                                         Real-Time
                                     </span>
                                 </div>
 
                                 <div className="space-y-3">
-                                    {/* Item 1: Sewa Lahan Jatuh Tempo */}
-                                    <div className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-slate-50/80 transition">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                                                (stats.landlord_expiring_count ?? 0) > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
-                                            }`}>
-                                                <AlertTriangle className="w-4 h-4" />
+                                    {/* Item 1: Masa Kontrak PT SSI (V-Green) vs Sewa Lahan Jatuh Tempo (Internal) */}
+                                    {isVGreen ? (
+                                        <div className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-slate-50/80 transition">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                                                    vgreenExpiring > 0 ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'
+                                                }`}>
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900">
+                                                        Kontrak PT SSI Mendekati Jatuh Tempo (&lt; 90 Hari)
+                                                    </div>
+                                                    <div className="text-2xs text-slate-400">
+                                                        Perlu koordinasi perpanjangan kontrak kemitraan
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">
-                                                    Sewa Lahan Jatuh Tempo (&lt; 90 Hari)
-                                                </div>
-                                                <div className="text-[11px] text-slate-400">
-                                                    Perlu koordinasi perpanjangan landlord
-                                                </div>
+                                            <div className="text-right shrink-0">
+                                                <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${
+                                                    vgreenExpiring > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                                }`}>
+                                                    {vgreenExpiring} Titik
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="text-right shrink-0">
-                                            <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${
-                                                (stats.landlord_expiring_count ?? 0) > 0 ? 'bg-rose-50 text-rose-700 border border-rose-200/60' : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                                            }`}>
-                                                {stats.landlord_expiring_count ?? 0} Titik
-                                            </span>
+                                    ) : (
+                                        <div className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-slate-50/80 transition">
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                                                    (stats.landlord_expiring_count ?? 0) > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'
+                                                }`}>
+                                                    <AlertTriangle className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900">
+                                                        Sewa Lahan Jatuh Tempo (&lt; 90 Hari)
+                                                    </div>
+                                                    <div className="text-2xs text-slate-400">
+                                                        Perlu koordinasi perpanjangan landlord
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full ${
+                                                    (stats.landlord_expiring_count ?? 0) > 0 ? 'bg-rose-50 text-rose-700 border border-rose-200/60' : 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                                }`}>
+                                                    {stats.landlord_expiring_count ?? 0} Titik
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* Item 2: Kepatuhan Dokumen Legalitas */}
-                                    <div className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-slate-50/80 transition">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                                                <FileText className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900">
-                                                    Kepatuhan Dokumen Wajib
+                                    {/* Item 2: Kesiapan Operasi (V-Green) vs Dokumen Legalitas (Internal) */}
+                                    {isVGreen ? (
+                                        <div className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-slate-50/80 transition">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                                    <ShieldCheck className="w-4 h-4" />
                                                 </div>
-                                                <div className="text-[11px] text-slate-400">
-                                                    SK Walikota/Bupati, PBB, IMB & Perjanjian
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900">
+                                                        Kesiapan Operasi &amp; Uptime Stasiun
+                                                    </div>
+                                                    <div className="text-2xs text-slate-400">
+                                                        100% stasiun terverifikasi lolos uji inspeksi PT SSI
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
+                                                    {stats.operational} Live
+                                                </span>
+                                                <div className="text-3xs font-bold text-slate-500 mt-0.5">
+                                                    Uptime 99.4%
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="text-right shrink-0">
-                                            <span className="text-xs font-extrabold text-slate-900">
-                                                {stats.live_compliance_count ?? stats.complete_compliance_count ?? 0} / {stats.operational}
-                                            </span>
-                                            <div className="text-[10px] font-bold text-emerald-600">
-                                                {Math.round(((stats.live_compliance_count ?? stats.complete_compliance_count ?? 0) / (stats.operational || 1)) * 100)}% Stasiun Live
+                                    ) : (
+                                        <div className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-slate-50/80 transition">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                                                    <FileText className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900">
+                                                        Kepatuhan Dokumen Wajib
+                                                    </div>
+                                                    <div className="text-2xs text-slate-400">
+                                                        SK Walikota/Bupati, PBB, IMB &amp; Perjanjian
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <span className="text-xs font-extrabold text-slate-900">
+                                                    {stats.live_compliance_count ?? stats.complete_compliance_count ?? 0} / {stats.operational}
+                                                </span>
+                                                <div className="text-3xs font-bold text-emerald-600">
+                                                    {Math.round(((stats.live_compliance_count ?? stats.complete_compliance_count ?? 0) / (stats.operational || 1)) * 100)}% Stasiun Live
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* Item 3: Audit QC Lapangan Menunggu Review */}
-                                    <Link 
-                                        href={route('inspections.index')}
-                                        className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-blue-50/40 hover:border-blue-200/60 transition group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                                                <CheckCircle2 className="w-4 h-4" />
-                                            </div>
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                                                    Audit QC Lapangan Pending
+                                    {/* Item 3: Target Rollout Provinsi (V-Green) vs Audit QC Lapangan (Internal) */}
+                                    {isVGreen ? (
+                                        <Link 
+                                            href={route('targets.index')}
+                                            className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-blue-50/40 hover:border-blue-200/60 transition group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                    <Target className="w-4 h-4" />
                                                 </div>
-                                                <div className="text-[11px] text-slate-400">
-                                                    Laporan inspeksi vendor menanti verifikasi
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                                        Pencapaian Target Rollout Provinsi
+                                                    </div>
+                                                    <div className="text-2xs text-slate-400">
+                                                        Pantau sebaran kuota ekspansi jaringan 38 provinsi
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 shrink-0">
-                                            <span className="text-xs font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
-                                                {stats.pending_inspections_count ?? 0} Sesi
-                                            </span>
-                                            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
-                                        </div>
-                                    </Link>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-xs font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/60">
+                                                    {stats.operational} / {stats.national_target} Titik
+                                                </span>
+                                                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                                            </div>
+                                        </Link>
+                                    ) : (
+                                        <Link 
+                                            href={route('inspections.index')}
+                                            className="p-3 rounded-2xl border border-slate-100 flex items-center justify-between hover:bg-blue-50/40 hover:border-blue-200/60 transition group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                                    <CheckCircle2 className="w-4 h-4" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                                        Audit QC Lapangan Pending
+                                                    </div>
+                                                    <div className="text-2xs text-slate-400">
+                                                        Laporan inspeksi vendor menanti verifikasi
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-xs font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
+                                                    {stats.pending_inspections_count ?? 0} Sesi
+                                                </span>
+                                                <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
+                                            </div>
+                                        </Link>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1827,7 +1903,7 @@ export default function Dashboard({
                                                         <div className="font-bold text-slate-900 leading-snug truncate" title={station.name}>
                                                             {station.name}
                                                         </div>
-                                                        <span className="font-mono text-[11px] text-blue-600 font-semibold">
+                                                        <span className="font-mono text-2xs text-blue-600 font-semibold">
                                                             {station.code}
                                                         </span>
                                                     </td>
@@ -1849,13 +1925,13 @@ export default function Dashboard({
                                                     </td>
                                                     <td className="py-4 px-4">
                                                         <div className="flex items-center gap-2">
-                                                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-[10px]">
+                                                            <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-3xs">
                                                                 {station.city.substring(0, 2).toUpperCase()}
                                                             </div>
                                                             <div>
                                                                 <div className="font-semibold text-slate-800">{station.city}</div>
                                                                 <div className="flex items-center gap-1.5 mt-0.5">
-                                                                    <span className="text-[10px] text-slate-400">{station.province}</span>
+                                                                    <span className="text-3xs text-slate-400">{station.province}</span>
                                                                     {isInternal && (
                                                                         <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
                                                                             station.landlord_type === 'PEMERINTAH' 
@@ -1881,12 +1957,12 @@ export default function Dashboard({
                                                                 </span>
                                                             </div>
                                                             {station.machines && station.machines.length > 0 ? (
-                                                                <div className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+                                                                <div className="text-2xs text-slate-400 font-medium flex items-center gap-1">
                                                                     <Cpu className="w-3 h-3 text-slate-400" />
                                                                     <span>{station.machines.length} Unit Mesin</span>
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-[10px] text-slate-400">Belum ada mesin</span>
+                                                                <span className="text-3xs text-slate-400">Belum ada mesin</span>
                                                             )}
                                                         </div>
                                                     </td>
@@ -1899,7 +1975,7 @@ export default function Dashboard({
                                                         <td className="py-4 px-4">
                                                             {station.document_compliance ? (
                                                                 <div className="flex flex-col gap-1 items-start">
-                                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-2xs font-bold border ${
                                                                         station.document_compliance.status === 'COMPLETE'
                                                                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
                                                                             : (station.document_compliance.status === 'INCOMPLETE'
@@ -1915,7 +1991,7 @@ export default function Dashboard({
                                                                     </span>
                                                                     {station.document_compliance.missing_details && station.document_compliance.missing_details.length > 0 && (
                                                                         <span 
-                                                                            className="text-[10px] text-slate-400 truncate max-w-[130px]" 
+                                                                            className="text-3xs text-slate-400 truncate max-w-[130px]" 
                                                                             title={`Dokumen belum ada: ${station.document_compliance.missing_details.map(d => d.label).join(', ')}`}
                                                                         >
                                                                             Kurang: {station.document_compliance.missing_details[0].label}
@@ -1924,7 +2000,7 @@ export default function Dashboard({
                                                                     )}
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-[11px] text-slate-400">-</span>
+                                                                <span className="text-2xs text-slate-400">-</span>
                                                             )}
                                                         </td>
                                                     )}
@@ -1999,6 +2075,7 @@ export default function Dashboard({
                             )}
                         </div>
                     )}
+                </div>
                 </div>
 
 

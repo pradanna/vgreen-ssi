@@ -34,6 +34,7 @@ export default function SidebarNav({
     const isMasterDataActive = activeNav === 'master-data' || (typeof route === 'function' && route().current('master-data.*'));
 
     const isSsiAdminOrDirector = user?.role_id === 'ADMIN_SSI' || user?.role_id === 'DIRECTOR_SSI';
+    const isVGreen = user?.role_id === 'VGREEN_REP';
 
     return (
         <aside 
@@ -123,10 +124,10 @@ export default function SidebarNav({
                     {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Peta GIS Nasional</span>}
                 </Link>
 
-                {/* SECTION 2: OPERASIONAL & QC */}
+                {/* SECTION 2: OPERASIONAL & QC (ATAU TARGET KEMITRAAN UNTUK V-GREEN) */}
                 {!isCollapsed ? (
                     <div className="px-3 pt-4 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 select-none">
-                        Operasional & QC
+                        {isVGreen ? 'Target Kemitraan' : 'Operasional & QC'}
                     </div>
                 ) : (
                     <div className="my-2 border-t border-slate-100 mx-1" />
@@ -150,36 +151,38 @@ export default function SidebarNav({
                     {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Target & Kuota</span>}
                 </Link>
 
-                {/* 5. Sesi Verifikasi & QC */}
-                <Link
-                    href={route('inspections.index')}
-                    title={isCollapsed ? 'Verifikasi & QC' : undefined}
-                    className={`relative flex items-center rounded-2xl transition-all duration-150 ${
-                        isCollapsed 
-                            ? 'w-12 h-12 mx-auto justify-center' 
-                            : 'w-full justify-between px-4 py-3 text-sm'
-                    } ${
-                        isInspectionsActive
-                            ? 'bg-[#F4F5F8] text-slate-900 shadow-subtle font-semibold'
-                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 font-medium'
-                    }`}
-                >
-                    <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5'}`}>
-                        <ShieldCheck className={`w-5 h-5 shrink-0 ${isInspectionsActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                        {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Verifikasi & QC</span>}
-                    </div>
-                    {pendingCount > 0 && (
-                        isCollapsed ? (
-                            <span className="absolute 1 top-2 right-2 bg-[#4E5BA6] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-2xs ring-2 ring-white">
-                                {pendingCount > 99 ? '99+' : pendingCount}
-                            </span>
-                        ) : (
-                            <span className="bg-[#4E5BA6] text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[28px] text-center shadow-2xs">
-                                {pendingCount}
-                            </span>
-                        )
-                    )}
-                </Link>
+                {/* 5. Sesi Verifikasi & QC (Hanya untuk Internal PT SSI / Field - Dibatasi dari V-Green) */}
+                {!isVGreen && (
+                    <Link
+                        href={route('inspections.index')}
+                        title={isCollapsed ? 'Verifikasi & QC' : undefined}
+                        className={`relative flex items-center rounded-2xl transition-all duration-150 ${
+                            isCollapsed 
+                                ? 'w-12 h-12 mx-auto justify-center' 
+                                : 'w-full justify-between px-4 py-3 text-sm'
+                        } ${
+                            isInspectionsActive
+                                ? 'bg-[#F4F5F8] text-slate-900 shadow-subtle font-semibold'
+                                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                        }`}
+                    >
+                        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3.5'}`}>
+                            <ShieldCheck className={`w-5 h-5 shrink-0 ${isInspectionsActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                            {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Verifikasi & QC</span>}
+                        </div>
+                        {pendingCount > 0 && (
+                            isCollapsed ? (
+                                <span className="absolute 1 top-2 right-2 bg-[#4E5BA6] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center shadow-2xs ring-2 ring-white">
+                                    {pendingCount > 99 ? '99+' : pendingCount}
+                                </span>
+                            ) : (
+                                <span className="bg-[#4E5BA6] text-white text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[28px] text-center shadow-2xs">
+                                    {pendingCount}
+                                </span>
+                            )
+                        )}
+                    </Link>
+                )}
 
                 {/* SECTION 3: MASTER DATA (ADMIN & DIREKTUR) */}
                 {isSsiAdminOrDirector && (

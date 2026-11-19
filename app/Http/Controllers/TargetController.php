@@ -35,8 +35,7 @@ class TargetController extends Controller
         $selectedYear = (int) $request->query('year', now()->format('Y'));
 
         $targets = ProvinceTarget::where('year', $selectedYear)
-            ->orderBy('region', 'asc')
-            ->orderBy('province_name', 'asc')
+            ->orderBy('updated_at', 'desc')
             ->get();
 
         // Get actual stations per province
@@ -74,6 +73,7 @@ class TargetController extends Controller
                 'percentage' => $percentage,
                 'notes' => $target->notes,
                 'updated_at' => $target->updated_at?->format('d M Y H:i'),
+                'updated_at_raw' => $target->updated_at?->toISOString() ?? $target->updated_at?->toDateTimeString(),
             ];
         });
 
@@ -119,12 +119,16 @@ class TargetController extends Controller
 
         $validated = $request->validate([
             'province_name' => 'required|string|max:100',
-            'region' => 'required|string|in:Jawa,Sumatera,Sulawesi,Bali-Nusra,Kalimantan,Maluku-Papua',
+            'region' => 'nullable|string|max:50',
             'year' => 'required|integer|min:2024|max:2035',
             'target_evcs' => 'required|integer|min:0',
             'target_bss' => 'required|integer|min:0',
             'notes' => 'nullable|string|max:500',
         ]);
+
+        if (empty($validated['region'])) {
+            $validated['region'] = $this->determineRegion($validated['province_name']);
+        }
 
         ProvinceTarget::updateOrCreate(
             [
@@ -135,6 +139,31 @@ class TargetController extends Controller
         );
 
         return redirect()->back()->with('success', "Target provinsi {$validated['province_name']} berhasil disimpan.");
+    }
+
+    /**
+     * Helper to map Indonesian province to standard macro region if not specified.
+     */
+    protected function determineRegion(string $province): string
+    {
+        $map = [
+            'DKI Jakarta' => 'Jawa', 'Jawa Barat' => 'Jawa', 'Jawa Tengah' => 'Jawa',
+            'D.I. Yogyakarta' => 'Jawa', 'Jawa Timur' => 'Jawa', 'Banten' => 'Jawa',
+            'Sumatera Utara' => 'Sumatera', 'Sumatera Barat' => 'Sumatera', 'Riau' => 'Sumatera',
+            'Kepulauan Riau' => 'Sumatera', 'Jambi' => 'Sumatera', 'Sumatera Selatan' => 'Sumatera',
+            'Bengkulu' => 'Sumatera', 'Lampung' => 'Sumatera', 'Kepulauan Bangka Belitung' => 'Sumatera',
+            'Aceh' => 'Sumatera', 'Bali' => 'Bali-Nusra', 'Nusa Tenggara Barat' => 'Bali-Nusra',
+            'Nusa Tenggara Timur' => 'Bali-Nusra', 'Kalimantan Barat' => 'Kalimantan',
+            'Kalimantan Tengah' => 'Kalimantan', 'Kalimantan Selatan' => 'Kalimantan',
+            'Kalimantan Timur' => 'Kalimantan', 'Kalimantan Utara' => 'Kalimantan',
+            'Sulawesi Utara' => 'Sulawesi', 'Sulawesi Tengah' => 'Sulawesi', 'Sulawesi Selatan' => 'Sulawesi',
+            'Sulawesi Tenggara' => 'Sulawesi', 'Gorontalo' => 'Sulawesi', 'Sulawesi Barat' => 'Sulawesi',
+            'Maluku' => 'Maluku-Papua', 'Maluku Utara' => 'Maluku-Papua', 'Papua' => 'Maluku-Papua',
+            'Papua Barat' => 'Maluku-Papua', 'Papua Barat Daya' => 'Maluku-Papua',
+            'Papua Tengah' => 'Maluku-Papua', 'Papua Pegunungan' => 'Maluku-Papua', 'Papua Selatan' => 'Maluku-Papua',
+        ];
+
+        return $map[$province] ?? 'Jawa';
     }
 
     /**

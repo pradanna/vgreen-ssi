@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { X, MapPin, Layers, Check, Search, ZoomIn, ZoomOut, Compass } from 'lucide-react';
+import { X, MapPin, Layers, Check, Search, ZoomIn, ZoomOut, Compass, LoaderCircle } from 'lucide-react';
+import Select2, { Select2Option } from '@/Components/Common/Select2';
 import { 
     getAllProvinces, 
     getCitiesByProvince, 
@@ -59,12 +61,31 @@ export default function MapPickerModal({
         longitude: initialLongitude && !isNaN(initialLongitude) ? initialLongitude : 106.8456,
     });
 
-    const [selectedProvince, setSelectedProvince] = useState<string>(initialProvince || '');
-    const [selectedCity, setSelectedCity] = useState<string>(initialCity || '');
-
     const provinceList = useMemo(() => {
         return [...getAllProvinces()].sort((a, b) => a.localeCompare('id'));
     }, []);
+
+    const [selectedProvince, setSelectedProvince] = useState<string>(() => {
+        if (!initialProvince) return '';
+        const found = getAllProvinces().find(p => p.toLowerCase() === initialProvince.trim().toLowerCase());
+        return found || initialProvince;
+    });
+    const [selectedCity, setSelectedCity] = useState<string>(initialCity || '');
+
+    // Synchronize initial state when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            const foundProv = provinceList.find(p => p.toLowerCase() === (initialProvince || '').trim().toLowerCase()) || initialProvince || '';
+            setSelectedProvince(foundProv);
+            setSelectedCity(initialCity || '');
+            if (initialLatitude && initialLongitude && !isNaN(initialLatitude) && !isNaN(initialLongitude)) {
+                setSelectedCoords({
+                    latitude: initialLatitude,
+                    longitude: initialLongitude,
+                });
+            }
+        }
+    }, [isOpen, initialProvince, initialCity, initialLatitude, initialLongitude, provinceList]);
 
     const availableCities = useMemo(() => {
         if (!selectedProvince) return [];
@@ -74,6 +95,160 @@ export default function MapPickerModal({
         }
         return cities;
     }, [selectedProvince, selectedCity]);
+
+    const provinceOptions = useMemo<Select2Option<string>[]>(() => {
+        return provinceList.map((prov) => ({
+            value: prov,
+            label: prov,
+        }));
+    }, [provinceList]);
+
+    const cityOptions = useMemo<Select2Option<string>[]>(() => {
+        return availableCities.map((city) => ({
+            value: city,
+            label: city,
+        }));
+    }, [availableCities]);
+
+    // Specific POI / Landmark / Street Search States
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<Array<{
+        place_id: number | string;
+        name: string;
+        display_name: string;
+        lat: number;
+        lon: number;
+        type: string;
+        class?: string;
+        city?: string;
+        province?: string;
+    }>>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const searchContainerRef = useRef<HTMLDivElement>(null);
+    const searchDropdownRef = useRef<HTMLDivElement>(null);
+    const [searchCoords, setSearchCoords] = useState<{ top: number; left: number; width: number } | null>(null);
+
+    const updateSearchPosition = useCallback(() => {
+        if (!searchContainerRef.current) return;
+        const rect = searchContainerRef.current.getBoundingClientRect();
+        setSearchCoords({
+            top: rect.bottom + 6,
+            left: rect.left,
+            width: Math.max(340, rect.width),
+        });
+    }, []);
+
+    // Live search debounce effect
+    useEffect(() => {
+        if (!searchQuery || searchQuery.trim().length < 2) {
+            setSearchResults([]);
+            setIsSearchOpen(false);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const params = new URLSearchParams({
+                    q: searchQuery.trim(),
+                    city: selectedCity || '',
+                    province: selectedProvince || '',
+                    lat: selectedCoords.latitude ? selectedCoords.latitude.toString() : '',
+                    lon: selectedCoords.longitude ? selectedCoords.longitude.toString() : '',
+                });
+                const res = await fetch(`/geo/search?${params.toString()}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSearchResults(data);
+                    setIsSearchOpen(true);
+                    updateSearchPosition();
+                }
+            } catch (err) {
+                console.error('Geo search error:', err);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 350);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, selectedCity, selectedProvince, updateSearchPosition]);
+
+    // Handle place selection
+    const handleSelectPlace = (place: {
+        lat: number;
+        lon: number;
+        name: string;
+        display_name: string;
+        province?: string;
+        city?: string;
+    }) => {
+        const lat = Number(place.lat.toFixed(7));
+        const lng = Number(place.lon.toFixed(7));
+
+        setSelectedCoords({ latitude: lat, longitude: lng });
+
+        if (mapInstanceRef.current && markerRef.current) {
+            mapInstanceRef.current.flyTo([lat, lng], 17, { duration: 1.2 });
+            markerRef.current.setLatLng([lat, lng]);
+        }
+
+        // Auto-sync province and city if available
+        if (place.province) {
+            const foundProv = provinceList.find(p => p.toLowerCase() === place.province?.trim().toLowerCase());
+            if (foundProv) {
+                setSelectedProvince(foundProv);
+                if (place.city) {
+                    const cities = getCitiesByProvince(foundProv);
+                    const foundCity = cities.find(c => c.toLowerCase() === place.city?.trim().toLowerCase()) || place.city;
+                    setSelectedCity(foundCity);
+                }
+            }
+        }
+
+        setSearchQuery(place.name);
+        setIsSearchOpen(false);
+    };
+
+    // Outside click & Escape dismiss listeners for search dropdown
+    useEffect(() => {
+        if (!isSearchOpen) return;
+
+        const handleMouseDown = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if (
+                searchContainerRef.current && !searchContainerRef.current.contains(target) &&
+                searchDropdownRef.current && !searchDropdownRef.current.contains(target)
+            ) {
+                setIsSearchOpen(false);
+            }
+        };
+
+        const handleScroll = (e: Event) => {
+            if (searchDropdownRef.current && searchDropdownRef.current.contains(e.target as Node)) {
+                return;
+            }
+            updateSearchPosition();
+        };
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsSearchOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleMouseDown, true);
+        window.addEventListener('scroll', handleScroll, true);
+        window.addEventListener('resize', updateSearchPosition);
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handleMouseDown, true);
+            window.removeEventListener('scroll', handleScroll, true);
+            window.removeEventListener('resize', updateSearchPosition);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isSearchOpen, updateSearchPosition]);
 
     const [mapLayer, setMapLayer] = useState<'streets' | 'satellite'>('streets');
     const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -138,6 +313,9 @@ export default function MapPickerModal({
             });
 
             map.invalidateSize();
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 250);
         }, 120);
 
         return () => {
@@ -167,6 +345,11 @@ export default function MapPickerModal({
     };
 
     const handleProvinceSelect = (province: string) => {
+        if (!province) {
+            setSelectedProvince('');
+            setSelectedCity('');
+            return;
+        }
         setSelectedProvince(province);
         const cities = getCitiesByProvince(province);
         const firstCity = cities.length > 0 ? cities[0] : '';
@@ -183,6 +366,7 @@ export default function MapPickerModal({
     };
 
     const handleCitySelect = (city: string) => {
+        if (!city) return;
         setSelectedCity(city);
         const targetCoords = getCityCoordinates(city, selectedProvince) || getProvinceCoordinates(selectedProvince);
         if (targetCoords && mapInstanceRef.current && markerRef.current) {
@@ -218,16 +402,10 @@ export default function MapPickerModal({
 
     return (
         <div 
-            className="fixed inset-0 z-70 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
-            onClick={(e) => {
-                if (e.target === e.currentTarget) {
-                    onClose();
-                }
-            }}
+            className="fixed inset-0 z-70 flex items-center justify-center p-3 sm:p-5 lg:p-6 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150"
         >
             <div 
-                className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 w-full max-w-4xl flex flex-col overflow-hidden max-h-[92vh]"
-                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-3xl shadow-2xl border border-slate-200/90 w-full max-w-6xl xl:max-w-7xl 2xl:max-w-[1440px] flex flex-col overflow-hidden h-[90vh] max-h-[94vh]"
             >
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
@@ -255,42 +433,97 @@ export default function MapPickerModal({
                     </button>
                 </div>
 
-                {/* Sub-Header: Presets & Controls */}
-                <div className="px-6 py-2.5 bg-slate-50/90 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shrink-0">
-                    <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-                        <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5 shrink-0">
-                            <Compass className="w-3.5 h-3.5 text-blue-600" />
-                            <span>Lompat ke Wilayah:</span>
-                        </span>
+                {/* Sub-Header: Search & Regional Selectors & Controls */}
+                <div className="px-6 py-2.5 bg-slate-50/90 border-b border-slate-100 flex flex-col xl:flex-row xl:items-center justify-between gap-3 text-xs shrink-0 relative z-30">
+                    <div className="flex items-center gap-3 flex-wrap flex-1 min-w-0">
+                        {/* 1. Direct Location / Landmark / POI Search Input */}
+                        <div ref={searchContainerRef} className="relative w-full sm:w-80 md:w-96 shrink-0">
+                            <div className="relative">
+                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        if (!isSearchOpen && e.target.value.trim().length >= 2) {
+                                            setIsSearchOpen(true);
+                                        }
+                                    }}
+                                    onFocus={() => {
+                                        if (searchResults.length > 0) {
+                                            setIsSearchOpen(true);
+                                            updateSearchPosition();
+                                        }
+                                    }}
+                                    placeholder="Cari lokasi, toko, RS, mall, jalan di seluruh Indonesia..."
+                                    className="w-full h-8 pl-8.5 pr-8 text-xs font-semibold bg-white border border-[#E8ECF2] hover:border-slate-300 rounded-xl text-slate-800 placeholder:text-slate-400 placeholder:font-normal focus:outline-hidden focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20 transition shadow-subtle"
+                                />
+                                {isSearching ? (
+                                    <LoaderCircle className="w-3.5 h-3.5 text-blue-600 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2" />
+                                ) : searchQuery ? (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            setSearchResults([]);
+                                            setIsSearchOpen(false);
+                                        }}
+                                        className="p-0.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-600 transition absolute right-2.5 top-1/2 -translate-y-1/2"
+                                        title="Hapus pencarian"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                ) : null}
+                            </div>
+                        </div>
 
-                        {/* Dropdown Provinsi */}
-                        <select
-                            value={selectedProvince}
-                            onChange={(e) => handleProvinceSelect(e.target.value)}
-                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer min-w-[150px] max-w-[200px]"
-                        >
-                            <option value="">-- Pilih Provinsi --</option>
-                            {provinceList.map((prov) => (
-                                <option key={prov} value={prov}>{prov}</option>
-                            ))}
-                        </select>
+                        {/* Divider */}
+                        <div className="hidden sm:block w-px h-5 bg-slate-200" />
 
-                        {/* Dropdown Kota / Kabupaten */}
-                        <select
-                            value={selectedCity}
-                            onChange={(e) => handleCitySelect(e.target.value)}
-                            disabled={!selectedProvince}
-                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed min-w-[150px] max-w-[200px]"
-                        >
-                            <option value="">{selectedProvince ? '-- Pilih Kota / Kab --' : '-- Pilih Provinsi Dulu --'}</option>
-                            {availableCities.map((city) => (
-                                <option key={city} value={city}>{city}</option>
-                            ))}
-                        </select>
+                        {/* 2. Regional Jumps: Provinsi & Kota / Kab */}
+                        <div className="flex items-center gap-2 flex-wrap min-w-0">
+                            <span className="text-[11px] font-bold text-slate-600 flex items-center gap-1.5 shrink-0">
+                                <Compass className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Wilayah:</span>
+                            </span>
+
+                            {/* Select2 Provinsi */}
+                            <div className="w-40 sm:w-44 shrink-0">
+                                <Select2
+                                    value={selectedProvince}
+                                    onChange={(val) => handleProvinceSelect(String(val))}
+                                    options={provinceOptions}
+                                    placeholder="-- Pilih Provinsi --"
+                                    searchPlaceholder="Cari provinsi..."
+                                    isSearchable={true}
+                                    variant="default"
+                                    size="sm"
+                                    className="w-full"
+                                    dropdownClassName="w-60"
+                                />
+                            </div>
+
+                            {/* Select2 Kota / Kabupaten */}
+                            <div className="w-40 sm:w-44 shrink-0">
+                                <Select2
+                                    value={selectedCity}
+                                    onChange={(val) => handleCitySelect(String(val))}
+                                    options={cityOptions}
+                                    disabled={!selectedProvince || availableCities.length === 0}
+                                    placeholder={selectedProvince ? '-- Pilih Kota / Kab --' : '-- Pilih Provinsi Dulu --'}
+                                    searchPlaceholder="Cari kota / kab..."
+                                    isSearchable={true}
+                                    variant="default"
+                                    size="sm"
+                                    className="w-full"
+                                    dropdownClassName="w-60"
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     {/* Layer Switcher */}
-                    <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200/90 shadow-2xs self-start sm:self-auto">
+                    <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200/90 shadow-2xs shrink-0 self-start xl:self-auto">
                         <button
                             type="button"
                             onClick={() => handleToggleLayer('streets')}
@@ -318,7 +551,7 @@ export default function MapPickerModal({
                 </div>
 
                 {/* Map Viewport */}
-                <div className="relative flex-1 min-h-[380px] sm:min-h-[460px] w-full bg-slate-100 overflow-hidden">
+                <div className="relative flex-1 min-h-[420px] sm:min-h-[500px] lg:min-h-[580px] w-full bg-slate-100 overflow-hidden">
                     <style>{`
                         .custom-map-picker-canvas.leaflet-container,
                         .custom-map-picker-canvas .leaflet-grab {
@@ -395,6 +628,77 @@ export default function MapPickerModal({
                     </div>
                 </div>
             </div>
+
+            {/* SEARCH RESULTS PORTAL POPOVER */}
+            {isSearchOpen && typeof document !== 'undefined' && searchCoords && createPortal(
+                <div
+                    ref={searchDropdownRef}
+                    style={{
+                        position: 'fixed',
+                        top: `${searchCoords.top}px`,
+                        left: `${searchCoords.left}px`,
+                        width: `${searchCoords.width}px`,
+                        maxWidth: '460px',
+                        zIndex: 99999,
+                    }}
+                    className="bg-white border border-[#EDF1F7] rounded-2xl shadow-[0_16px_36px_rgba(15,23,42,0.18)] p-2 space-y-1 animate-in fade-in zoom-in-95 duration-100 font-sans"
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <div className="px-2 py-1 text-[10px] font-bold tracking-wider text-slate-400 uppercase flex items-center justify-between">
+                        <span>Hasil Pencarian Lokasi & Landmark</span>
+                        {searchResults.length > 0 && (
+                            <span className="text-blue-600 font-extrabold">{searchResults.length} lokasi</span>
+                        )}
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto space-y-1 py-0.5 scrollbar-thin scrollbar-thumb-slate-200">
+                        {searchResults.length === 0 ? (
+                            <div className="py-6 px-3 text-center text-xs text-slate-400 font-medium">
+                                {isSearching ? (
+                                    <div className="flex items-center justify-center gap-2 text-blue-600">
+                                        <LoaderCircle className="w-4 h-4 animate-spin" />
+                                        <span>Mencari koordinat lokasi...</span>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <p className="font-semibold text-slate-600">Tidak ada lokasi ditemukan</p>
+                                        <p className="text-[11px] text-slate-400 mt-0.5">Coba gunakan nama gedung, rumah sakit, mall, atau jalan lainnya.</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            searchResults.map((place) => (
+                                <button
+                                    key={place.place_id}
+                                    type="button"
+                                    onClick={() => handleSelectPlace(place)}
+                                    className="w-full flex items-start gap-2.5 px-3 py-2 rounded-xl text-left hover:bg-blue-50/70 transition group"
+                                >
+                                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-blue-600 group-hover:text-white transition">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-1">
+                                            <span className="text-xs font-bold text-slate-900 group-hover:text-blue-700 truncate">
+                                                {place.name}
+                                            </span>
+                                            {place.type && (
+                                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 shrink-0">
+                                                    {place.type}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                                            {place.display_name}
+                                        </p>
+                                    </div>
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>,
+                document.body
+            )}
         </div>
     );
 }

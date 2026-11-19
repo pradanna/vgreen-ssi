@@ -250,6 +250,7 @@ export interface ProvinceTargetItem {
     percentage?: number;
     notes?: string;
     updated_at?: string;
+    updated_at_raw?: string;
 }
 
 export interface TargetSummary {

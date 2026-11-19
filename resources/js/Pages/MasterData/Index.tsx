@@ -20,7 +20,8 @@ import {
     MoreVertical,
     Eye,
     Lock,
-    X
+    X,
+    MapPin
 } from 'lucide-react';
 import Modal from '@/Components/Modal';
 import SidebarNav from '@/Components/Navigation/SidebarNav';
@@ -615,9 +616,14 @@ export default function MasterDataIndex({
                                                                 <span className="font-mono text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200/80 shrink-0">
                                                                     {m.code}
                                                                 </span>
-                                                                <span className="font-bold text-slate-900 text-sm truncate max-w-[220px]" title={m.name}>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => router.visit(route('gis.index', { machine_id: m.id }))}
+                                                                    className="font-bold text-slate-900 hover:text-blue-600 text-sm truncate max-w-[220px] text-left transition cursor-pointer"
+                                                                    title={`Lihat stasiun dengan ${m.name} di Peta GIS`}
+                                                                >
                                                                     {m.name}
-                                                                </span>
+                                                                </button>
                                                             </div>
                                                         </td>
 
@@ -660,10 +666,16 @@ export default function MasterDataIndex({
                                                         {/* Usage in Stations */}
                                                         <td className="px-6 py-4 whitespace-nowrap">
                                                             {(m.station_machines_count ?? 0) > 0 ? (
-                                                                <span className="px-2.5 py-1 rounded-xl bg-indigo-50 text-indigo-700 font-bold border border-indigo-200/60 inline-flex items-center gap-1">
-                                                                    <CheckCircle2 className="w-3 h-3 text-indigo-600" />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => router.visit(route('gis.index', { machine_id: m.id }))}
+                                                                    className="px-2.5 py-1 rounded-xl bg-indigo-50 hover:bg-indigo-100/90 text-indigo-700 font-bold border border-indigo-200/80 hover:border-indigo-300 inline-flex items-center gap-1.5 transition-all shadow-subtle hover:shadow cursor-pointer group"
+                                                                    title={`Lihat ${m.station_machines_count} titik di Peta GIS`}
+                                                                >
+                                                                    <CheckCircle2 className="w-3 h-3 text-indigo-600 group-hover:scale-110 transition-transform" />
                                                                     <span>{m.station_machines_count} Titik</span>
-                                                                </span>
+                                                                    <ChevronRight className="w-3 h-3 text-indigo-400 group-hover:translate-x-0.5 transition-transform" />
+                                                                </button>
                                                             ) : (
                                                                 <span className="text-[11px] text-slate-400 font-medium">
                                                                     0 Titik
@@ -686,6 +698,18 @@ export default function MasterDataIndex({
                                                                     </button>
                                                                 }
                                                             >
+                                                                {/* 0. Lihat di Peta GIS */}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => router.visit(route('gis.index', { machine_id: m.id }))}
+                                                                    className="w-full px-3.5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50/80 flex items-center gap-2 transition"
+                                                                >
+                                                                    <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                                                                    <span>Lihat di Peta GIS</span>
+                                                                </button>
+
+                                                                <div className="my-1 border-t border-slate-100" />
+
                                                                 {/* 1. Detail */}
                                                                 <button
                                                                     type="button"

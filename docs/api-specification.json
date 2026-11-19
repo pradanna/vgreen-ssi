@@ -79,9 +79,35 @@
         }
       }
     },
+    "/stations/{station}": {
+      "get": {
+        "summary": "Detail Lengkap Titik Stasiun untuk Vendor (GPS, Alamat, Mesin Charger)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "station", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Detail stasiun berhasil diambil" }
+        }
+      }
+    },
+    "/inspections": {
+      "get": {
+        "summary": "Riwayat Laporan Inspeksi yang Diajukan oleh Vendor",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["PENDING_REVIEW", "REVISION_REQUIRED", "APPROVED"] } },
+          { "name": "stage", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "station_id", "in": "query", "required": false, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Daftar riwayat laporan berhasil diambil" }
+        }
+      }
+    },
     "/stations/{station}/inspections": {
       "post": {
-        "summary": "Submit 7-Angle Inspection Session with GPS Audit Tags",
+        "summary": "Submit 7-Angle Inspection Session with Condition Assessment & GPS Audit Tags",
         "security": [{ "bearerAuth": [] }],
         "parameters": [
           { "name": "station", "in": "path", "required": true, "schema": { "type": "integer" } }
@@ -98,8 +124,20 @@
                     "type": "string",
                     "enum": ["INITIAL_SURVEY", "CONSTRUCTION_PROGRESS", "COMMISSIONING", "ROUTINE_PERIODIC"]
                   },
+                  "overall_condition": {
+                    "type": "string",
+                    "enum": ["BAIK", "CUKUP", "RUSAK_RINGAN", "RUSAK_BERAT"]
+                  },
+                  "physical_condition": { "type": "string" },
+                  "electrical_condition": { "type": "string" },
+                  "issues_found": { "type": "array", "items": { "type": "string" } },
+                  "machine_conditions": { "type": "array" },
+                  "latitude": { "type": "number", "format": "float" },
+                  "longitude": { "type": "number", "format": "float" },
                   "notes": { "type": "string" },
                   "photo_LAHAN_DEPAN": { "type": "string", "format": "binary" },
+                  "lat_LAHAN_DEPAN": { "type": "number", "format": "float" },
+                  "lng_LAHAN_DEPAN": { "type": "number", "format": "float" },
                   "photo_LAHAN_SAMPING": { "type": "string", "format": "binary" },
                   "photo_LAHAN_AKSES": { "type": "string", "format": "binary" },
                   "photo_MESIN_DEPAN": { "type": "string", "format": "binary" },
@@ -112,7 +150,19 @@
           }
         },
         "responses": {
-          "201": { "description": "Laporan & 7 sudut foto berhasil tersimpan" }
+          "201": { "description": "Laporan & dokumentasi kondisi serta foto berhasil tersimpan" }
+        }
+      }
+    },
+    "/inspections/{report}/resubmit": {
+      "post": {
+        "summary": "Resubmit Laporan Revisi (Perbaikan Foto / Kondisi Lapangan)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "report", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Revisi laporan berhasil dikirim ulang" }
         }
       }
     },

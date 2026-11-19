@@ -12,6 +12,14 @@ class InspectionReport extends Model
         'approval_status_id',
         'reviewed_by',
         'stage',
+        'overall_condition',
+        'physical_condition',
+        'electrical_condition',
+        'issues_found',
+        'machine_conditions',
+        'latitude',
+        'longitude',
+        'distance_meters',
         'notes',
         'rejection_reason',
         'submitted_at',
@@ -19,6 +27,11 @@ class InspectionReport extends Model
     ];
 
     protected $casts = [
+        'issues_found' => 'array',
+        'machine_conditions' => 'array',
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'distance_meters' => 'float',
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
     ];

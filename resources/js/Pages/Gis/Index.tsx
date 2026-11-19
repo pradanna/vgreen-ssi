@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import { PageProps } from '@/types';
-import { Station, FacilityType, StationStatus, FacilityTypeId, StationStatusId, StatsSummary } from '@/types/station';
+import { Station, FacilityType, StationStatus, FacilityTypeId, StationStatusId, StatsSummary, MasterMachine } from '@/types/station';
 import GoogleMapView from '@/Components/Map/GoogleMapView';
 import FilterBar, { OwnershipFilter } from '@/Components/Map/FilterBar';
 import StationDetailDrawer from '@/Components/Map/StationDetailDrawer';
@@ -29,6 +29,7 @@ interface GisPageProps extends PageProps {
     stats: StatsSummary;
     facilityTypes?: FacilityType[];
     stationStatuses?: StationStatus[];
+    masterMachines?: MasterMachine[];
     availableRoles: { id: string; name: string; description: string }[];
     googleMapsApiKey?: string;
 }
@@ -39,6 +40,7 @@ export default function GisIndex({
     stats,
     facilityTypes = [],
     stationStatuses = [],
+    masterMachines = [],
     availableRoles = [],
     googleMapsApiKey = '',
 }: GisPageProps) {
@@ -59,6 +61,18 @@ export default function GisIndex({
     const [selectedOwnership, setSelectedOwnership] = useState<OwnershipFilter>('ALL');
     const [selectedFacilityType, setSelectedFacilityType] = useState<FacilityTypeId | 'ALL'>('ALL');
     const [selectedStatus, setSelectedStatus] = useState<StationStatusId | 'ALL'>('ALL');
+    const [selectedMachineId, setSelectedMachineId] = useState<number | 'ALL'>('ALL');
+
+    // Parse URL query parameters pada mount pertama (e.g. ?machine_id=1)
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const mId = params.get('machine_id');
+            if (mId && !isNaN(Number(mId))) {
+                setSelectedMachineId(Number(mId));
+            }
+        }
+    }, []);
 
     // Drawer & Modals
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
@@ -101,6 +115,16 @@ export default function GisIndex({
                 return false;
             }
 
+            // Filter Model Mesin
+            if (selectedMachineId !== 'ALL') {
+                const hasMatchingMachine = station.machines && station.machines.some((m: any) => {
+                    return m.machine_id === selectedMachineId || m.id === selectedMachineId;
+                });
+                if (!hasMatchingMachine) {
+                    return false;
+                }
+            }
+
             // Filter Provinsi
             if (selectedProvince !== 'ALL' && station.province?.trim() !== selectedProvince.trim()) {
                 return false;
@@ -138,7 +162,7 @@ export default function GisIndex({
 
             return true;
         });
-    }, [stations, selectedFacilityType, selectedStatus, selectedProvince, selectedCity, selectedOwnership, searchQuery]);
+    }, [stations, selectedFacilityType, selectedStatus, selectedMachineId, selectedProvince, selectedCity, selectedOwnership, searchQuery]);
 
     // Reset semua filter
     const handleResetFilters = () => {
@@ -148,6 +172,10 @@ export default function GisIndex({
         setSelectedOwnership('ALL');
         setSelectedFacilityType('ALL');
         setSelectedStatus('ALL');
+        setSelectedMachineId('ALL');
+        if (typeof window !== 'undefined') {
+            window.history.replaceState({}, '', window.location.pathname);
+        }
     };
 
     return (
@@ -243,6 +271,9 @@ export default function GisIndex({
                             onFacilityTypeChange={setSelectedFacilityType}
                             selectedStatus={selectedStatus}
                             onStatusChange={setSelectedStatus}
+                            selectedMachineId={selectedMachineId}
+                            onMachineChange={setSelectedMachineId}
+                            masterMachines={masterMachines}
                             stats={stats}
                             totalFiltered={filteredStations.length}
                             isVGreen={isVGreen}

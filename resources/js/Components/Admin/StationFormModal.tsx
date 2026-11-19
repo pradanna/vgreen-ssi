@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Station, FacilityType, StationStatus, StationMachine, LandlordType, MasterMachine } from '@/types/station';
 import { useForm } from '@inertiajs/react';
 import MapPickerModal from '@/Components/Map/MapPickerModal';
+import Select2, { Select2Option } from '@/Components/Common/Select2';
 import { getAllProvinces, getCitiesByProvince } from '@/utils/indonesiaRegions';
 import { 
     X, 
@@ -338,28 +339,6 @@ export default function StationFormModal({
         }
     };
 
-    // Quick presets for Indonesian cities coordinates
-    const cityPresets = [
-        { label: 'Jakarta', lat: -6.2088, lng: 106.8456, city: 'Jakarta Selatan', prov: 'DKI Jakarta' },
-        { label: 'Bandung', lat: -6.9175, lng: 107.6191, city: 'Bandung', prov: 'Jawa Barat' },
-        { label: 'Surabaya', lat: -7.2575, lng: 112.7521, city: 'Surabaya', prov: 'Jawa Timur' },
-        { label: 'Semarang', lat: -6.9667, lng: 110.4167, city: 'Semarang', prov: 'Jawa Tengah' },
-        { label: 'Bali (Denpasar)', lat: -8.6705, lng: 115.2126, city: 'Denpasar', prov: 'Bali' },
-        { label: 'Medan', lat: 3.5952, lng: 98.6722, city: 'Medan', prov: 'Sumatera Utara' },
-        { label: 'Makassar', lat: -5.1477, lng: 119.4327, city: 'Makassar', prov: 'Sulawesi Selatan' },
-        { label: 'IKN Nusantara', lat: -0.9634, lng: 116.7027, city: 'Penajam Paser', prov: 'Kalimantan Timur' },
-    ];
-
-    const applyPreset = (preset: typeof cityPresets[0]) => {
-        setData(prev => ({
-            ...prev,
-            latitude: preset.lat,
-            longitude: preset.lng,
-            city: preset.city,
-            province: preset.prov,
-        }));
-    };
-
     const provinceList = useMemo(() => {
         return [...getAllProvinces()].sort((a, b) => a.localeCompare('id'));
     }, []);
@@ -372,6 +351,20 @@ export default function StationFormModal({
         }
         return cities;
     }, [data.province, data.city]);
+
+    const provinceOptions = useMemo<Select2Option<string>[]>(() => {
+        return provinceList.map((prov) => ({
+            value: prov,
+            label: prov,
+        }));
+    }, [provinceList]);
+
+    const cityOptions = useMemo<Select2Option<string>[]>(() => {
+        return availableCities.map((city) => ({
+            value: city,
+            label: city,
+        }));
+    }, [availableCities]);
 
     const handleProvinceChange = (newProvince: string) => {
         const cities = getCitiesByProvince(newProvince);
@@ -386,15 +379,9 @@ export default function StationFormModal({
         <>
             <div 
                 className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-y-auto animate-in fade-in duration-200"
-                onClick={(e) => {
-                    if (e.target === e.currentTarget) {
-                        onClose();
-                    }
-                }}
             >
                 <div 
                     className="max-w-5xl xl:max-w-6xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-100 flex flex-col max-h-[92vh] my-auto transition-all"
-                    onClick={(e) => e.stopPropagation()}
                 >
                 {/* Modal Header */}
                 <div className="p-6 px-8 border-b border-slate-100 flex justify-between items-center bg-[#FCFCFD] shrink-0">
@@ -496,19 +483,14 @@ export default function StationFormModal({
                         <div className="space-y-6 animate-in fade-in duration-150">
                             {/* Identitas Pokok */}
                             <div className="space-y-3.5">
-                                <div className="border-b border-slate-100 pb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                                    <div>
-                                        <h3 className="font-bold text-slate-800 text-xs flex items-center gap-2">
-                                            <span className="w-2 h-2 rounded-full bg-blue-600" />
-                                            <span>Identitas Pokok & Status Stasiun</span>
-                                        </h3>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">
-                                            Tentukan nama lokasi publik, status kesiapan operasional, dan jam operasional stasiun.
-                                        </p>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100 w-fit">
-                                        ⚡ Kode stasiun otomatis diterbitkan: VG-[KOTA]-00001
-                                    </span>
+                                <div className="border-b border-slate-100 pb-2">
+                                    <h3 className="font-bold text-slate-800 text-xs flex items-center gap-2">
+                                        <span className="w-2 h-2 rounded-full bg-blue-600" />
+                                        <span>Identitas Pokok & Status Stasiun</span>
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                        Tentukan nama lokasi publik, status kesiapan operasional, dan jam operasional stasiun.
+                                    </p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -559,40 +541,25 @@ export default function StationFormModal({
 
                             {/* Geolokasi & Alamat */}
                             <div className="space-y-3.5 pt-4 border-t border-slate-100">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
-                                    <div>
+                                <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-2">
+                                    <div className="min-w-0 flex-1">
                                         <h3 className="font-bold text-slate-800 text-xs flex items-center gap-2">
                                             <Navigation className="w-3.5 h-3.5 text-blue-600" />
                                             <span>Geolokasi & Koordinat GIS (Indonesia)</span>
                                         </h3>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">
+                                        <p className="text-[11px] text-slate-400 mt-0.5 whitespace-nowrap truncate">
                                             Koordinat lintang dan bujur untuk pemetaan GIS nasional.
                                         </p>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsMapPickerOpen(true)}
-                                            className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition shadow-2xs"
-                                            title="Buka peta visual untuk memilih titik koordinat secara langsung"
-                                        >
-                                            <MapPin className="w-3.5 h-3.5 stroke-[2.5]" />
-                                            <span>Pilih Titik di Peta</span>
-                                        </button>
-                                        <div className="flex items-center gap-1 flex-wrap">
-                                            <span className="text-[11px] font-semibold text-slate-400 mr-0.5 hidden md:inline">Preset:</span>
-                                            {cityPresets.map(preset => (
-                                                <button
-                                                    key={preset.label}
-                                                    type="button"
-                                                    onClick={() => applyPreset(preset)}
-                                                    className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 border border-slate-200/60 text-[11px] font-medium transition"
-                                                >
-                                                    {preset.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsMapPickerOpen(true)}
+                                        className="h-8 px-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 transition shadow-2xs shrink-0"
+                                        title="Buka peta visual untuk memilih titik koordinat secara langsung"
+                                    >
+                                        <MapPin className="w-3.5 h-3.5 stroke-[2.5]" />
+                                        <span>Pilih Titik di Peta</span>
+                                    </button>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -600,17 +567,18 @@ export default function StationFormModal({
                                         <label className="block text-xs font-semibold text-slate-700 mb-1">
                                             Provinsi <span className="text-rose-500">*</span>
                                         </label>
-                                        <select
+                                        <Select2
                                             value={data.province}
-                                            onChange={(e) => handleProvinceChange(e.target.value)}
-                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
-                                            required
-                                        >
-                                            <option value="">-- Pilih Provinsi --</option>
-                                            {provinceList.map((prov) => (
-                                                <option key={prov} value={prov}>{prov}</option>
-                                            ))}
-                                        </select>
+                                            onChange={(val) => handleProvinceChange(String(val))}
+                                            options={provinceOptions}
+                                            placeholder="-- Pilih Provinsi --"
+                                            searchPlaceholder="Cari provinsi..."
+                                            isSearchable={true}
+                                            variant="default"
+                                            size="sm"
+                                            className="w-full"
+                                            triggerClassName="w-full h-9 rounded-lg"
+                                        />
                                         {errors.province && <span className="text-rose-500 text-[11px] mt-1 block">{errors.province}</span>}
                                     </div>
 
@@ -618,18 +586,19 @@ export default function StationFormModal({
                                         <label className="block text-xs font-semibold text-slate-700 mb-1">
                                             Kota / Kabupaten <span className="text-rose-500">*</span>
                                         </label>
-                                        <select
+                                        <Select2
                                             value={data.city}
-                                            onChange={(e) => setData('city', e.target.value)}
-                                            disabled={!data.province}
-                                            className="w-full h-9 px-3 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
-                                            required
-                                        >
-                                            <option value="">{data.province ? '-- Pilih Kota / Kab --' : '-- Pilih Provinsi Dulu --'}</option>
-                                            {availableCities.map((c) => (
-                                                <option key={c} value={c}>{c}</option>
-                                            ))}
-                                        </select>
+                                            onChange={(val) => setData('city', String(val))}
+                                            options={cityOptions}
+                                            disabled={!data.province || availableCities.length === 0}
+                                            placeholder={data.province ? '-- Pilih Kota / Kab --' : '-- Pilih Provinsi Dulu --'}
+                                            searchPlaceholder="Cari kota / kab..."
+                                            isSearchable={true}
+                                            variant="default"
+                                            size="sm"
+                                            className="w-full"
+                                            triggerClassName="w-full h-9 rounded-lg"
+                                        />
                                         {errors.city && <span className="text-rose-500 text-[11px] mt-1 block">{errors.city}</span>}
                                     </div>
 

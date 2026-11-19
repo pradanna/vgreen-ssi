@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Search, X, Check } from 'lucide-react';
 
 export interface Select2Option<T = string | number> {
@@ -9,6 +10,7 @@ export interface Select2Option<T = string | number> {
     badgeColor?: string;
     icon?: React.ComponentType<{ className?: string }>;
     disabled?: boolean;
+    keywords?: string[];
 }
 
 export interface Select2Props<T = string | number> {
@@ -22,6 +24,7 @@ export interface Select2Props<T = string | number> {
     onClear?: () => void;
     disabled?: boolean;
     className?: string;
+    triggerClassName?: string;
     dropdownClassName?: string;
     variant?: 'pill' | 'default';
     size?: 'sm' | 'md';
@@ -40,6 +43,7 @@ export default function Select2<T extends string | number = string>({
     onClear,
     disabled = false,
     className = '',
+    triggerClassName = '',
     dropdownClassName = '',
     variant = 'pill',
     size = 'md',
@@ -49,11 +53,23 @@ export default function Select2<T extends string | number = string>({
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+
+    const [coords, setCoords] = useState<{
+        top?: number;
+        bottom?: number;
+        left: number;
+        width: number;
+        placement: 'bottom' | 'top';
+    } | null>(null);
 
     // Selected option object
     const selectedOption = useMemo(() => {
-        return options.find(opt => opt.value === value) || null;
+        return options.find(opt => 
+            opt.value === value || 
+            (typeof opt.value === 'string' && typeof value === 'string' && opt.value.toLowerCase() === value.toLowerCase())
+        ) || null;
     }, [options, value]);
 
     // Filter options based on search query
@@ -63,48 +79,115 @@ export default function Select2<T extends string | number = string>({
         return options.filter(opt => {
             const matchLabel = opt.label.toLowerCase().includes(q);
             const matchSubtext = opt.subtext ? opt.subtext.toLowerCase().includes(q) : false;
-            return matchLabel || matchSubtext;
+            const matchKeywords = opt.keywords ? opt.keywords.some(k => k.toLowerCase().includes(q)) : false;
+            return matchLabel || matchSubtext || matchKeywords;
         });
     }, [options, searchQuery]);
 
-    // Handle outside click to close dropdown
+    // Calculate fixed viewport coordinates for portal rendering
+    const updatePosition = useCallback(() => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const estimatedHeight = 280;
+        const menuWidth = Math.max(240, rect.width);
+
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const openUpwards = spaceBelow < estimatedHeight && rect.top > estimatedHeight;
+
+        let left = align === 'right' ? rect.right - menuWidth : rect.left;
+
+        // Viewport boundaries
+        if (left + menuWidth > window.innerWidth - 12) {
+            left = window.innerWidth - menuWidth - 12;
+        }
+        if (left < 12) {
+            left = 12;
+        }
+
+        if (openUpwards) {
+            setCoords({
+                bottom: window.innerHeight - rect.top + 6,
+                left,
+                width: menuWidth,
+                placement: 'top',
+            });
+        } else {
+            setCoords({
+                top: rect.bottom + 6,
+                left,
+                width: menuWidth,
+                placement: 'bottom',
+            });
+        }
+    }, [align]);
+
+    const handleToggle = () => {
+        if (disabled) return;
+        if (!isOpen) {
+            updatePosition();
+        }
+        setIsOpen(!isOpen);
+    };
+
+    // Update position on open
     useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        if (isOpen) {
+            updatePosition();
+        }
+    }, [isOpen, updatePosition]);
+
+    // Handle dismiss listeners: outside click, escape key, and scroll
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handleMouseDown = (event: MouseEvent | TouchEvent) => {
+            const target = event.target as Node;
+            if (
+                containerRef.current && !containerRef.current.contains(target) &&
+                menuRef.current && !menuRef.current.contains(target)
+            ) {
                 setIsOpen(false);
                 setSearchQuery('');
             }
         };
 
-        if (isOpen) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+        const handleScroll = (event: Event) => {
+            // Do not dismiss or reposition if scrolling inside the dropdown list itself
+            if (menuRef.current && menuRef.current.contains(event.target as Node)) {
+                return;
+            }
+            updatePosition();
         };
-    }, [isOpen]);
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsOpen(false);
+                setSearchQuery('');
+            }
+        };
+
+        document.addEventListener('mousedown', handleMouseDown, true);
+        window.addEventListener('scroll', handleScroll, true);
+        window.addEventListener('resize', updatePosition);
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handleMouseDown, true);
+            window.removeEventListener('scroll', handleScroll, true);
+            window.removeEventListener('resize', updatePosition);
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, updatePosition]);
 
     // Focus search input when dropdown opens
     useEffect(() => {
         if (isOpen && isSearchable && searchInputRef.current) {
-            setTimeout(() => {
+            const timer = setTimeout(() => {
                 searchInputRef.current?.focus();
-            }, 50);
+            }, 60);
+            return () => clearTimeout(timer);
         }
     }, [isOpen, isSearchable]);
-
-    // Handle escape key
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                setIsOpen(false);
-                setSearchQuery('');
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen]);
 
     const handleSelect = (option: Select2Option<T>) => {
         if (option.disabled) return;
@@ -127,17 +210,19 @@ export default function Select2<T extends string | number = string>({
     const isSm = size === 'sm';
 
     const triggerBaseClass = isPill
-        ? `rounded-full bg-[#F4F5F8] hover:bg-[#ECEFF4] border border-slate-200/60 ${isSm ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-xs'} font-bold text-slate-800 shadow-subtle`
-        : `rounded-2xl bg-white border border-[#E8ECF2] hover:border-slate-300 ${isSm ? 'px-3 py-2 text-xs' : 'px-4 py-2.5 text-xs'} font-semibold text-slate-800 shadow-subtle`;
+        ? `rounded-full bg-[#F4F5F8] hover:bg-[#ECEFF4] border border-slate-200/60 ${isSm ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-xs'} font-bold text-slate-800 shadow-subtle whitespace-nowrap`
+        : `${isSm ? 'rounded-xl px-3 py-1.5 text-xs' : 'rounded-2xl px-4 py-2 text-xs'} bg-white border border-[#E8ECF2] hover:border-slate-300 font-semibold text-slate-800 shadow-subtle`;
+
+    const isBrowser = typeof document !== 'undefined';
 
     return (
-        <div ref={containerRef} className={`relative inline-block text-left select-none ${className} ${isOpen ? 'z-40' : ''}`}>
+        <div ref={containerRef} className={`relative inline-block text-left select-none ${className}`}>
             {/* TRIGGER BUTTON */}
             <button
                 type="button"
                 disabled={disabled}
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-full flex items-center justify-between gap-2.5 transition-all duration-200 outline-hidden focus:ring-2 focus:ring-blue-500/20 ${triggerBaseClass} ${
+                onClick={handleToggle}
+                className={`w-full flex items-center justify-between gap-2.5 transition-all duration-200 outline-hidden focus:ring-2 focus:ring-blue-500/20 ${triggerBaseClass} ${triggerClassName} ${
                     isOpen ? 'ring-2 ring-blue-500/20 border-blue-500 bg-white' : ''
                 } ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
@@ -146,7 +231,7 @@ export default function Select2<T extends string | number = string>({
                     {selectedOption?.icon && (
                         <selectedOption.icon className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     )}
-                    <span className="truncate">
+                    <span className={`truncate ${isPill ? 'max-w-[130px] sm:max-w-[165px]' : ''}`}>
                         {selectedOption ? selectedOption.label : placeholder}
                     </span>
                     {selectedOption?.badge !== undefined && (
@@ -174,12 +259,21 @@ export default function Select2<T extends string | number = string>({
                 </div>
             </button>
 
-            {/* FLOATING DROPDOWN POPOVER */}
-            {isOpen && (
+            {/* FLOATING PORTAL DROPDOWN POPOVER (Escapes panel & modal boundaries) */}
+            {isOpen && isBrowser && coords && createPortal(
                 <div 
-                    className={`absolute z-50 mt-1.5 min-w-[220px] max-w-sm w-max bg-white border border-[#EDF1F7] rounded-2xl shadow-[0_12px_32px_rgba(15,23,42,0.12)] p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-150 ${
-                        align === 'right' ? 'right-0' : 'left-0'
-                    } ${dropdownClassName}`}
+                    ref={menuRef}
+                    style={{
+                        position: 'fixed',
+                        top: coords.top !== undefined ? `${coords.top}px` : undefined,
+                        bottom: coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
+                        left: `${coords.left}px`,
+                        width: `${coords.width}px`,
+                        maxWidth: '380px',
+                        zIndex: 99999,
+                    }}
+                    className={`bg-white border border-[#EDF1F7] rounded-2xl shadow-[0_16px_36px_rgba(15,23,42,0.16)] p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-100 ${dropdownClassName}`}
+                    onClick={(e) => e.stopPropagation()}
                 >
                     {/* LIVE SEARCH INPUT */}
                     {isSearchable && (
@@ -191,7 +285,7 @@ export default function Select2<T extends string | number = string>({
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder={searchPlaceholder}
-                                className="w-full bg-canvas border border-[#EDF1F7] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
+                                className="w-full bg-[#F8FAFC] border border-[#EDF1F7] rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium"
                                 onClick={(e) => e.stopPropagation()}
                             />
                         </div>
@@ -253,7 +347,8 @@ export default function Select2<T extends string | number = string>({
                             })
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

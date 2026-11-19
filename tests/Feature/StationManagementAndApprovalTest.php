@@ -67,7 +67,7 @@ class StationManagementAndApprovalTest extends TestCase
         // Inspections QC index
         $this->actingAs($this->admin)->get(route('inspections.index'))
             ->assertOk()
-            ->assertInertia(fn ($page) => $page->component('Dashboard')->where('activeNav', 'inspections'));
+            ->assertInertia(fn ($page) => $page->component('Inspections/Index')->where('activeNav', 'inspections'));
     }
 
     /**
@@ -383,7 +383,15 @@ class StationManagementAndApprovalTest extends TestCase
             $this->assertArrayNotHasKey('contract_landlord_start_date', $station);
             $this->assertArrayNotHasKey('contract_landlord_end_date', $station);
             $this->assertArrayNotHasKey('contract_landlord_doc_number', $station);
+            $this->assertArrayNotHasKey('lease_end_date', $station);
+            $this->assertArrayNotHasKey('landlord_name', $station);
+            // Must contain V-Green & PT SSI contract details
+            $this->assertArrayHasKey('contract_vgreen_doc_number', $station);
         });
+
+        // V-Green cannot access internal QC & verification module (HTTP 403)
+        $inspectionsRes = $this->actingAs($this->vgreen)->get(route('inspections.index'));
+        $inspectionsRes->assertForbidden();
     }
 
     /**
@@ -446,5 +454,180 @@ class StationManagementAndApprovalTest extends TestCase
         $storageRes = $this->actingAs($this->admin)->get("/storage/{$document->file_path}");
         $storageRes->assertOk();
         $storageRes->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    /**
+     * GIS Map: Verify masterMachines are provided and station machines include machine_id for filtering.
+     */
+    public function test_gis_page_provides_master_machines_and_machine_id_mapping(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('gis.index'));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('Gis/Index')
+            ->has('masterMachines')
+            ->where('masterMachines', fn ($machines) => count($machines) > 0)
+            ->has('stations')
+        );
+
+        $stations = $response->viewData('page')['props']['stations'];
+        $firstWithMachines = collect($stations)->first(fn ($s) => !empty($s['machines']));
+        $this->assertNotNull($firstWithMachines);
+        $this->assertArrayHasKey('machine_id', $firstWithMachines['machines'][0]);
+    }
+
+    /**
+     * Geolocation & POI Search: Verify /geo/search endpoint returns location candidates.
+     */
+    public function test_geo_search_endpoint_returns_location_candidates(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Http::fake([
+            '*google.com/*' => \Illuminate\Support\Facades\Http::response([], 200),
+            'nominatim.openstreetmap.org/*' => \Illuminate\Support\Facades\Http::response([
+                [
+                    'place_id' => 12345,
+                    'name' => 'RSU Indriati Solo Baru',
+                    'display_name' => 'RSU Indriati Solo Baru, Jalan Jeruk, Grogol, Sukoharjo, Jawa Tengah',
+                    'lat' => '-7.6113715',
+                    'lon' => '110.8085877',
+                    'type' => 'hospital',
+                    'class' => 'amenity',
+                    'address' => [
+                        'amenity' => 'RSU Indriati Solo Baru',
+                        'road' => 'Jalan Jeruk',
+                        'county' => 'Sukoharjo',
+                        'state' => 'Jawa Tengah',
+                    ],
+                ]
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('geo.search', ['q' => 'indriati solo']));
+        $response->assertOk();
+        $response->assertJsonCount(1);
+        $response->assertJsonFragment([
+            'name' => 'RSU Indriati Solo Baru',
+            'type' => 'hospital',
+            'city' => 'Sukoharjo',
+            'province' => 'Jawa Tengah',
+        ]);
+    }
+
+    /**
+     * Geolocation & POI Search: Verify Indonesian typo normalization (e.g. patimura -> pattimura).
+     */
+    public function test_geo_search_endpoint_normalizes_indonesian_typos(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Http::fake([
+            '*google.com/*' => \Illuminate\Support\Facades\Http::response([], 200),
+            'nominatim.openstreetmap.org/search?*q=patimura*' => \Illuminate\Support\Facades\Http::response([], 200),
+            'nominatim.openstreetmap.org/search?*q=pattimura*' => \Illuminate\Support\Facades\Http::response([
+                [
+                    'place_id' => 7771,
+                    'name' => 'Alfamart',
+                    'display_name' => 'Alfamart, Jalan Kapten Pattimura, Jambi, Indonesia',
+                    'lat' => '-1.6200712',
+                    'lon' => '103.5812599',
+                    'type' => 'convenience',
+                    'class' => 'shop',
+                    'address' => [
+                        'shop' => 'Alfamart',
+                        'road' => 'Jalan Kapten Pattimura',
+                        'city' => 'Jambi',
+                        'state' => 'Jambi',
+                    ],
+                ]
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('geo.search', ['q' => 'patimura alfamart']));
+        $response->assertOk();
+        $response->assertJsonCount(1);
+        $response->assertJsonFragment([
+            'name' => 'Alfamart',
+            'city' => 'Jambi',
+        ]);
+    }
+
+    /**
+     * Geolocation & POI Search: Verify fallback to Photon fuzzy geocoder when Nominatim is empty.
+     */
+    public function test_geo_search_endpoint_falls_back_to_photon_fuzzy_search(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Http::fake([
+            '*google.com/*' => \Illuminate\Support\Facades\Http::response([], 200),
+            'nominatim.openstreetmap.org/*' => \Illuminate\Support\Facades\Http::response([], 200),
+            'photon.komoot.io/*' => \Illuminate\Support\Facades\Http::response([
+                'features' => [
+                    [
+                        'properties' => [
+                            'osm_id' => 999123,
+                            'name' => 'Alfamart Pattimura',
+                            'street' => 'Jalan Kapten Pattimura',
+                            'city' => 'Surakarta',
+                            'state' => 'Jawa Tengah',
+                            'country' => 'Indonesia',
+                            'countrycode' => 'ID',
+                            'osm_key' => 'shop',
+                            'osm_value' => 'convenience',
+                        ],
+                        'geometry' => [
+                            'type' => 'Point',
+                            'coordinates' => [110.8119, -7.5830],
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('geo.search', ['q' => 'patimura alfamart', 'city' => 'Surakarta']));
+        $response->assertOk();
+        $response->assertJsonCount(1);
+        $response->assertJsonFragment([
+            'name' => 'Alfamart Pattimura',
+            'city' => 'Surakarta',
+            'province' => 'Jawa Tengah',
+        ]);
+    }
+
+    /**
+     * Geolocation & POI Search: Verify Google Maps Place Search matching businesses seen on map tiles.
+     */
+    public function test_geo_search_endpoint_matches_google_places(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Http::fake([
+            '*google.com/*' => \Illuminate\Support\Facades\Http::response(
+                ")]}'\n" . json_encode([
+                    [
+                        'alfamart patimura solo',
+                        [
+                            [
+                                14 => [
+                                    9 => [null, null, -7.5862429, 110.8157058],
+                                    11 => 'Alfamart Patimura Solo',
+                                    13 => ['Minimarket'],
+                                    18 => 'Alfamart Patimura Solo, Jl. Patimura Kel No.100, RT.03/RW.04, Serengan, Surakarta City, Central Java 57155',
+                                    2 => ['Jl. Patimura Kel No.100', 'Serengan', 'Surakarta City', 'Central Java 57155'],
+                                ]
+                            ]
+                        ]
+                    ]
+                ]),
+                200
+            ),
+            'nominatim.openstreetmap.org/*' => \Illuminate\Support\Facades\Http::response([], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('geo.search', ['q' => 'alfamart patimura solo']));
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'name' => 'Alfamart Patimura Solo',
+            'lat' => -7.5862429,
+            'lon' => 110.8157058,
+        ]);
     }
 }

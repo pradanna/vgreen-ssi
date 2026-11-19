@@ -12,6 +12,7 @@ class InspectionPhoto extends Model
         'photo_url',
         'latitude',
         'longitude',
+        'distance_meters',
         'taken_at',
         'is_approved',
         'reviewer_notes',
@@ -20,6 +21,7 @@ class InspectionPhoto extends Model
     protected $casts = [
         'latitude' => 'float',
         'longitude' => 'float',
+        'distance_meters' => 'float',
         'taken_at' => 'datetime',
         'is_approved' => 'boolean',
     ];
