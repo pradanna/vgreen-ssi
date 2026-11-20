@@ -874,3 +874,89 @@ export const getCityCoordinates = (
 
     return null;
 };
+
+/**
+ * Normalizes province name from geocoder (English/Indonesian/abbreviations) to official canonical name.
+ */
+export const normalizeProvinceName = (prov: string): string => {
+    if (!prov) return '';
+    const clean = prov.trim().toLowerCase();
+
+    const aliasMap: Record<string, string> = {
+        'central java': 'Jawa Tengah',
+        'west java': 'Jawa Barat',
+        'east java': 'Jawa Timur',
+        'special capital region of jakarta': 'DKI Jakarta',
+        'jakarta': 'DKI Jakarta',
+        'dki jakarta': 'DKI Jakarta',
+        'daerah khusus ibukota jakarta': 'DKI Jakarta',
+        'special region of yogyakarta': 'D.I. Yogyakarta',
+        'yogyakarta': 'D.I. Yogyakarta',
+        'di yogyakarta': 'D.I. Yogyakarta',
+        'daerah istimewa yogyakarta': 'D.I. Yogyakarta',
+        'north sumatra': 'Sumatera Utara',
+        'west sumatra': 'Sumatera Barat',
+        'south sumatra': 'Sumatera Selatan',
+        'west kalimantan': 'Kalimantan Barat',
+        'east kalimantan': 'Kalimantan Timur',
+        'south kalimantan': 'Kalimantan Selatan',
+        'central kalimantan': 'Kalimantan Tengah',
+        'north kalimantan': 'Kalimantan Utara',
+        'south sulawesi': 'Sulawesi Selatan',
+        'north sulawesi': 'Sulawesi Utara',
+        'central sulawesi': 'Sulawesi Tengah',
+        'southeast sulawesi': 'Sulawesi Tenggara',
+        'west sulawesi': 'Sulawesi Barat',
+        'bali': 'Bali',
+        'aceh': 'Aceh',
+        'riau': 'Riau',
+        'jambi': 'Jambi',
+        'lampung': 'Lampung',
+        'banten': 'Banten',
+    };
+
+    if (aliasMap[clean]) {
+        return aliasMap[clean];
+    }
+
+    const found = INDONESIA_REGIONS.find((r) => {
+        const rName = r.name.toLowerCase();
+        return rName === clean || clean.includes(rName) || rName.includes(clean);
+    });
+
+    return found ? found.name : prov.trim();
+};
+
+/**
+ * Normalizes city name from geocoder (e.g. "Surakarta", "Surakarta City", "Solo")
+ * to the exact option value present in getCitiesByProvince(province).
+ */
+export const normalizeCityName = (city: string, provinceName?: string): string => {
+    if (!city) return '';
+    const cleanCity = city.trim().toLowerCase().replace(/^(kota|kabupaten|kab\.)\s+/i, '').replace(/\s+(city|regency)$/i, '').trim();
+
+    const canonicalProv = provinceName ? normalizeProvinceName(provinceName) : '';
+    const regionsToCheck = canonicalProv 
+        ? INDONESIA_REGIONS.filter(r => r.name.toLowerCase() === canonicalProv.toLowerCase())
+        : INDONESIA_REGIONS;
+
+    for (const region of regionsToCheck) {
+        // 1. Exact clean match
+        for (const c of region.cities) {
+            const cleanC = c.toLowerCase().replace(/^(kota|kabupaten|kab\.)\s+/i, '').replace(/\s+(city|regency)$/i, '').trim();
+            if (cleanC === cleanCity) {
+                return c;
+            }
+        }
+
+        // 2. Substring match (e.g. "surakarta" matches "Surakarta (Solo)", "solo" matches "Surakarta (Solo)")
+        for (const c of region.cities) {
+            const cleanC = c.toLowerCase().replace(/^(kota|kabupaten|kab\.)\s+/i, '').replace(/\s+(city|regency)$/i, '').trim();
+            if (cleanC.includes(cleanCity) || cleanCity.includes(cleanC)) {
+                return c;
+            }
+        }
+    }
+
+    return city.trim();
+};

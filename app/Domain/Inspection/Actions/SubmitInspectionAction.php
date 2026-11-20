@@ -2,6 +2,7 @@
 
 namespace App\Domain\Inspection\Actions;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Domain\GIS\GeoCoordinate;
 use App\Models\ApprovalStatus;
 use App\Models\ChecklistSlot;
@@ -117,6 +118,21 @@ class SubmitInspectionAction
                 ]);
             }
         }
+
+        ActivityLogger::log(
+            module: 'INSPECTION',
+            action: 'INSPECTION_SUBMITTED',
+            description: "Pengajuan laporan inspeksi tahap {$report->stage} untuk stasiun {$station->code} - {$station->name}",
+            subject: $station,
+            properties: [
+                'report_id' => $report->id,
+                'stage' => $report->stage,
+                'overall_condition' => $report->overall_condition,
+                'photos_count' => count($data['photos'] ?? []),
+                'distance_meters' => $report->distance_meters,
+            ],
+            user: $submitter
+        );
 
         return $report->fresh(['approvalStatus', 'submitter', 'photos.slot']);
     }

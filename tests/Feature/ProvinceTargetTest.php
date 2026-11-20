@@ -81,4 +81,69 @@ class ProvinceTargetTest extends TestCase
             'target_bss' => 10,
         ]);
     }
+
+    public function test_targets_page_supports_serverside_pagination(): void
+    {
+        $admin = User::where('role_id', Role::ADMIN_SSI)->first();
+
+        // Page 1 with per_page 10
+        $response = $this->actingAs($admin)->get(route('targets.index', ['per_page' => 10, 'page' => 1]));
+        $response->assertStatus(200);
+        $response->assertInertia(fn($page) => $page->component('Targets/Index')
+            ->where('targets.per_page', 10)
+            ->where('targets.current_page', 1)
+            ->has('targets.data', 10)
+            ->has('targets.links')
+        );
+
+        // Page 2
+        $responsePage2 = $this->actingAs($admin)->get(route('targets.index', ['per_page' => 10, 'page' => 2]));
+        $responsePage2->assertStatus(200);
+        $responsePage2->assertInertia(fn($page) => $page->component('Targets/Index')
+            ->where('targets.current_page', 2)
+            ->where('targets.per_page', 10)
+        );
+    }
+
+    public function test_targets_page_supports_serverside_search_and_filters(): void
+    {
+        $admin = User::where('role_id', Role::ADMIN_SSI)->first();
+
+        // Search for 'Jawa'
+        $response = $this->actingAs($admin)->get(route('targets.index', ['search' => 'Jawa']));
+        $response->assertStatus(200);
+        $response->assertInertia(fn($page) => $page->component('Targets/Index')
+            ->where('filters.search', 'Jawa')
+        );
+
+        // Filter by exact province
+        $responseProv = $this->actingAs($admin)->get(route('targets.index', ['province' => 'DKI Jakarta']));
+        $responseProv->assertStatus(200);
+        $responseProv->assertInertia(fn($page) => $page->component('Targets/Index')
+            ->where('targets.total', 1)
+            ->where('targets.data.0.province_name', 'DKI Jakarta')
+        );
+
+        // Filter by status OPERATIONAL
+        $responseStatus = $this->actingAs($admin)->get(route('targets.index', ['status' => 'OPERATIONAL']));
+        $responseStatus->assertStatus(200);
+        $responseStatus->assertInertia(fn($page) => $page->component('Targets/Index')
+            ->where('filters.status', 'OPERATIONAL')
+        );
+
+        // Sort by NAME_ASC
+        $responseSortName = $this->actingAs($admin)->get(route('targets.index', ['sort' => 'NAME_ASC']));
+        $responseSortName->assertStatus(200);
+        $responseSortName->assertInertia(fn($page) => $page->component('Targets/Index')
+            ->where('filters.sort', 'NAME_ASC')
+            ->where('targets.data.0.province_name', 'Aceh')
+        );
+
+        // Sort by TARGET_DESC
+        $responseSortTarget = $this->actingAs($admin)->get(route('targets.index', ['sort' => 'TARGET_DESC']));
+        $responseSortTarget->assertStatus(200);
+        $responseSortTarget->assertInertia(fn($page) => $page->component('Targets/Index')
+            ->where('filters.sort', 'TARGET_DESC')
+        );
+    }
 }

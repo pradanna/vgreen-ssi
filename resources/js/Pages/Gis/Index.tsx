@@ -21,7 +21,8 @@ import {
     Search,
     Bell,
     Briefcase,
-    Landmark
+    Landmark,
+    AlertCircle
 } from 'lucide-react';
 
 interface GisPageProps extends PageProps {
@@ -61,15 +62,15 @@ export default function GisIndex({
     const [selectedOwnership, setSelectedOwnership] = useState<OwnershipFilter>('ALL');
     const [selectedFacilityType, setSelectedFacilityType] = useState<FacilityTypeId | 'ALL'>('ALL');
     const [selectedStatus, setSelectedStatus] = useState<StationStatusId | 'ALL'>('ALL');
-    const [selectedMachineId, setSelectedMachineId] = useState<number | 'ALL'>('ALL');
+    const [selectedMachineId, setSelectedMachineId] = useState<string | 'ALL'>('ALL');
 
-    // Parse URL query parameters pada mount pertama (e.g. ?machine_id=1)
+    // Parse URL query parameters pada mount pertama (e.g. ?machine_id=xxx)
     useEffect(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
             const mId = params.get('machine_id');
-            if (mId && !isNaN(Number(mId))) {
-                setSelectedMachineId(Number(mId));
+            if (mId) {
+                setSelectedMachineId(mId);
             }
         }
     }, []);
@@ -115,10 +116,10 @@ export default function GisIndex({
                 return false;
             }
 
-            // Filter Model Mesin
+            // Filter Model Mesin (hanya mencocokkan machine_id yang merujuk ke Master Machine)
             if (selectedMachineId !== 'ALL') {
                 const hasMatchingMachine = station.machines && station.machines.some((m: any) => {
-                    return m.machine_id === selectedMachineId || m.id === selectedMachineId;
+                    return m.machine_id != null && String(m.machine_id) === String(selectedMachineId);
                 });
                 if (!hasMatchingMachine) {
                     return false;
@@ -180,13 +181,12 @@ export default function GisIndex({
 
     return (
         <div className="flex h-screen w-screen bg-canvas text-slate-800 font-sans overflow-hidden antialiased">
-            <Head title="Peta GIS Nasional - V-Green SSI Platform" />
+            <Head title="Peta Stasiun - V-Green SSI Platform" />
 
             {/* SIDEBAR NAVIGATION (LEBAR NORMAL w-64) */}
             <SidebarNav 
                 user={user} 
                 activeNav="gis" 
-                pendingCount={stats.construction + stats.surveyed} 
             />
 
             {/* MAIN CONTENT AREA */}
@@ -197,7 +197,7 @@ export default function GisIndex({
                     <div className="flex items-center gap-4">
                         <SidebarTrigger />
                         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-                            Peta GIS Sebaran Nasional
+                            Peta Stasiun
                         </h1>
                     </div>
 
@@ -253,8 +253,8 @@ export default function GisIndex({
                         />
                     </div>
 
-                    {/* 3. PENCARIAN & FILTER MELAYANG DI DEPAN PETA (FLOATING BAR 1 BARIS) */}
-                    <div className="absolute top-4 left-6 z-20 max-w-[calc(100vw-3rem)]">
+                    {/* 3. PANEL FILTER VERTIKAL MELAYANG DI KIRI PETA */}
+                    <div className="absolute top-4 left-6 z-20 pointer-events-auto">
                         <FilterBar
                             variant="floating"
                             searchQuery={searchQuery}
@@ -282,6 +282,34 @@ export default function GisIndex({
                             onSelectStation={(s) => setSelectedStation(s)}
                         />
                     </div>
+
+                    {/* EMPTY STATE FILTER NOTICE */}
+                    {filteredStations.length === 0 && (
+                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 pointer-events-auto max-w-lg w-full px-4">
+                            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-[0_8px_30px_rgba(15,23,42,0.12)] p-4 flex items-center justify-between gap-3 text-xs font-semibold text-slate-700 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 border border-amber-200/60">
+                                        <AlertCircle className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-slate-900 text-xs">Tidak ada stasiun yang sesuai filter</p>
+                                        <p className="text-[11px] text-slate-500 font-normal">
+                                            {selectedMachineId !== 'ALL' 
+                                                ? `Model mesin ${masterMachines.find(m => m.id === selectedMachineId)?.name || ''} belum terpasang di titik manapun.`
+                                                : 'Coba ubah atau reset filter untuk melihat persebaran stasiun lainnya.'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleResetFilters}
+                                    className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs shrink-0 cursor-pointer"
+                                >
+                                    Reset Filter
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* 4. SLIDE-OVER DETAIL STASIUN (PETA TETAP AKTIF BEBAS DIJALANKAN) */}
                     <StationDetailDrawer

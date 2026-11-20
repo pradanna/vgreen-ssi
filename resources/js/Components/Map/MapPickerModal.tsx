@@ -8,7 +8,9 @@ import {
     getAllProvinces, 
     getCitiesByProvince, 
     getProvinceCoordinates, 
-    getCityCoordinates 
+    getCityCoordinates,
+    normalizeProvinceName,
+    normalizeCityName
 } from '@/utils/indonesiaRegions';
 
 interface MapPickerModalProps {
@@ -18,11 +20,15 @@ interface MapPickerModalProps {
     initialLongitude?: number;
     initialProvince?: string;
     initialCity?: string;
+    initialAddress?: string;
+    initialPostalCode?: string;
     onConfirm: (coords: { 
         latitude: number; 
         longitude: number; 
         province?: string; 
         city?: string;
+        address?: string;
+        postal_code?: string;
     }) => void;
 }
 
@@ -52,6 +58,8 @@ export default function MapPickerModal({
     initialLongitude = 106.8456,
     initialProvince = '',
     initialCity = '',
+    initialAddress = '',
+    initialPostalCode = '',
     onConfirm,
 }: MapPickerModalProps) {
     if (!isOpen) return null;
@@ -71,6 +79,46 @@ export default function MapPickerModal({
         return found || initialProvince;
     });
     const [selectedCity, setSelectedCity] = useState<string>(initialCity || '');
+    const [selectedAddress, setSelectedAddress] = useState<string>(initialAddress || '');
+    const [selectedPostalCode, setSelectedPostalCode] = useState<string>(initialPostalCode || '');
+    const [isReverseLoading, setIsReverseLoading] = useState<boolean>(false);
+    const reverseDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Reverse Geocoding: resolves lat/lon to full address, postal code, city, and province
+    const fetchReverseGeocode = useCallback((lat: number, lng: number) => {
+        if (reverseDebounceRef.current) {
+            clearTimeout(reverseDebounceRef.current);
+        }
+
+        setIsReverseLoading(true);
+
+        reverseDebounceRef.current = setTimeout(async () => {
+            try {
+                const res = await fetch(`/geo/reverse?lat=${lat}&lon=${lng}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.province) {
+                        const normProv = normalizeProvinceName(data.province);
+                        setSelectedProvince(normProv);
+                        if (data.city) {
+                            const normCity = normalizeCityName(data.city, normProv);
+                            setSelectedCity(normCity);
+                        }
+                    }
+                    if (data.address) {
+                        setSelectedAddress(data.address);
+                    }
+                    if (data.postal_code) {
+                        setSelectedPostalCode(data.postal_code);
+                    }
+                }
+            } catch (err) {
+                console.error('Reverse geocode error:', err);
+            } finally {
+                setIsReverseLoading(false);
+            }
+        }, 300);
+    }, []);
 
     // Synchronize initial state when modal opens
     useEffect(() => {
@@ -78,14 +126,23 @@ export default function MapPickerModal({
             const foundProv = provinceList.find(p => p.toLowerCase() === (initialProvince || '').trim().toLowerCase()) || initialProvince || '';
             setSelectedProvince(foundProv);
             setSelectedCity(initialCity || '');
-            if (initialLatitude && initialLongitude && !isNaN(initialLatitude) && !isNaN(initialLongitude)) {
-                setSelectedCoords({
-                    latitude: initialLatitude,
-                    longitude: initialLongitude,
-                });
+            setSelectedAddress(initialAddress || '');
+            setSelectedPostalCode(initialPostalCode || '');
+
+            const validLat = initialLatitude && !isNaN(initialLatitude) ? initialLatitude : -6.2088;
+            const validLng = initialLongitude && !isNaN(initialLongitude) ? initialLongitude : 106.8456;
+
+            setSelectedCoords({
+                latitude: validLat,
+                longitude: validLng,
+            });
+
+            // If initial address is empty, reverse geocode the starting location
+            if (!initialAddress && validLat && validLng) {
+                fetchReverseGeocode(validLat, validLng);
             }
         }
-    }, [isOpen, initialProvince, initialCity, initialLatitude, initialLongitude, provinceList]);
+    }, [isOpen, initialProvince, initialCity, initialAddress, initialPostalCode, initialLatitude, initialLongitude, provinceList, fetchReverseGeocode]);
 
     const availableCities = useMemo(() => {
         if (!selectedProvince) return [];
@@ -182,6 +239,7 @@ export default function MapPickerModal({
         display_name: string;
         province?: string;
         city?: string;
+        postcode?: string;
     }) => {
         const lat = Number(place.lat.toFixed(7));
         const lng = Number(place.lon.toFixed(7));
@@ -195,16 +253,23 @@ export default function MapPickerModal({
 
         // Auto-sync province and city if available
         if (place.province) {
-            const foundProv = provinceList.find(p => p.toLowerCase() === place.province?.trim().toLowerCase());
-            if (foundProv) {
-                setSelectedProvince(foundProv);
-                if (place.city) {
-                    const cities = getCitiesByProvince(foundProv);
-                    const foundCity = cities.find(c => c.toLowerCase() === place.city?.trim().toLowerCase()) || place.city;
-                    setSelectedCity(foundCity);
-                }
+            const normProv = normalizeProvinceName(place.province);
+            setSelectedProvince(normProv);
+            if (place.city) {
+                const normCity = normalizeCityName(place.city, normProv);
+                setSelectedCity(normCity);
             }
         }
+
+        if (place.display_name) {
+            setSelectedAddress(place.display_name);
+        }
+        if (place.postcode) {
+            setSelectedPostalCode(place.postcode);
+        }
+
+        // Fetch reverse geocode to guarantee complete administrative breakdown
+        fetchReverseGeocode(lat, lng);
 
         setSearchQuery(place.name);
         setIsSearchOpen(false);
@@ -302,7 +367,7 @@ export default function MapPickerModal({
 
             markerRef.current = marker;
 
-            // Click event on map: klik di mana saja memindahkan pin seketika
+            // Click event on map: klik di mana saja memindahkan pin seketika & reverse geocode
             map.on('click', (e: L.LeafletMouseEvent) => {
                 const newCoords = {
                     latitude: Number(e.latlng.lat.toFixed(7)),
@@ -310,6 +375,7 @@ export default function MapPickerModal({
                 };
                 marker.setLatLng([newCoords.latitude, newCoords.longitude]);
                 setSelectedCoords(newCoords);
+                fetchReverseGeocode(newCoords.latitude, newCoords.longitude);
             });
 
             map.invalidateSize();
@@ -321,7 +387,7 @@ export default function MapPickerModal({
         return () => {
             clearTimeout(timer);
         };
-    }, [isOpen]);
+    }, [isOpen, fetchReverseGeocode]);
 
     // Handle Map Layer Toggle (Google Streets vs Google Hybrid Satellite)
     const handleToggleLayer = (layer: 'streets' | 'satellite') => {
@@ -362,6 +428,7 @@ export default function MapPickerModal({
             mapInstanceRef.current.flyTo([lat, lng], 13, { duration: 1.2 });
             markerRef.current.setLatLng([lat, lng]);
             setSelectedCoords({ latitude: lat, longitude: lng });
+            fetchReverseGeocode(lat, lng);
         }
     };
 
@@ -375,6 +442,7 @@ export default function MapPickerModal({
             mapInstanceRef.current.flyTo([lat, lng], 14, { duration: 1.2 });
             markerRef.current.setLatLng([lat, lng]);
             setSelectedCoords({ latitude: lat, longitude: lng });
+            fetchReverseGeocode(lat, lng);
         }
     };
 
@@ -384,6 +452,8 @@ export default function MapPickerModal({
             longitude: selectedCoords.longitude,
             province: selectedProvince,
             city: selectedCity,
+            address: selectedAddress,
+            postal_code: selectedPostalCode,
         });
         onClose();
     };
@@ -594,18 +664,30 @@ export default function MapPickerModal({
                 {/* Footer Controls & Live Coordinates */}
                 <div className="px-6 py-3.5 bg-white border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
                     {/* Live Coordinates Readout */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-semibold text-slate-500">Koordinat Dipilih:</span>
-                        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/80">
+                    <div className="flex items-center gap-2 flex-wrap min-w-0 flex-1">
+                        <span className="text-xs font-semibold text-slate-500 shrink-0">Koordinat Dipilih:</span>
+                        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/80 shrink-0">
                             <span>Lat: {selectedCoords.latitude.toFixed(6)}</span>
                             <span className="text-slate-300">•</span>
                             <span>Lng: {selectedCoords.longitude.toFixed(6)}</span>
                         </div>
-                        {selectedCity && (
+                        {isReverseLoading ? (
+                            <span className="text-[11px] font-medium text-blue-600 flex items-center gap-1.5 animate-pulse bg-blue-50/80 px-2.5 py-1 rounded-md border border-blue-100">
+                                <LoaderCircle className="w-3.5 h-3.5 animate-spin" />
+                                <span>Mendeteksi alamat & wilayah...</span>
+                            </span>
+                        ) : selectedAddress ? (
+                            <span 
+                                className="text-[11px] font-semibold text-slate-700 bg-slate-100/90 px-2.5 py-1 rounded-md border border-slate-200/90 max-w-sm xl:max-w-md truncate" 
+                                title={selectedAddress}
+                            >
+                                📍 {selectedAddress}
+                            </span>
+                        ) : selectedCity ? (
                             <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md border border-blue-100">
                                 📍 {selectedCity}{selectedProvince ? `, ${selectedProvince}` : ''}
                             </span>
-                        )}
+                        ) : null}
                     </div>
 
                     {/* Action Buttons */}

@@ -20,6 +20,10 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
             'device_name' => 'nullable|string',
+        ], [
+            'email.required' => 'Email wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
         $user = User::with('role')->where('email', $request->email)->first();

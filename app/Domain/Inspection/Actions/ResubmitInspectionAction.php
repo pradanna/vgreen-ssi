@@ -2,6 +2,7 @@
 
 namespace App\Domain\Inspection\Actions;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Domain\GIS\GeoCoordinate;
 use App\Models\ApprovalStatus;
 use App\Models\InspectionPhoto;
@@ -116,6 +117,20 @@ class ResubmitInspectionAction
                 }
             }
         }
+
+        ActivityLogger::log(
+            module: 'INSPECTION',
+            action: 'INSPECTION_RESUBMITTED',
+            description: "Pengajuan ulang revisi inspeksi stasiun {$report->station->code} - {$report->station->name}",
+            subject: $report->station,
+            properties: [
+                'report_id' => $report->id,
+                'stage' => $report->stage,
+                'overall_condition' => $report->overall_condition,
+                'photos_count' => count($data['photos'] ?? []),
+            ],
+            user: $submitter
+        );
 
         return $report->fresh(['approvalStatus', 'submitter', 'photos.slot', 'station']);
     }

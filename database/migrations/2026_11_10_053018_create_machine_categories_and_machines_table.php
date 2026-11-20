@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // 1. Master Kategori Mesin (EVCS, BSS)
         Schema::create('m_machine_categories', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('code', 30)->unique(); // EVCS, BSS
             $table->string('name', 100);
             $table->text('description')->nullable();
@@ -22,8 +22,8 @@ return new class extends Migration
 
         // 2. Master Katalog Mesin / Model Series
         Schema::create('m_machines', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('category_id')->constrained('m_machine_categories')->cascadeOnUpdate()->restrictOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('category_id')->constrained('m_machine_categories')->cascadeOnUpdate()->restrictOnDelete();
             $table->string('code', 50)->unique(); // e.g. AUTEL-DC-120, DELTA-AC-22, BSS-GEN3-8S
             $table->string('name', 150); // e.g. Autel MaxiCharger DC 120kW
             $table->string('brand', 100); // Autel, Delta, ABB, Starcharge, V-Green
@@ -42,7 +42,7 @@ return new class extends Migration
 
         // 3. Connect station_machines to master m_machines (backward-compatible nullable FK)
         Schema::table('station_machines', function (Blueprint $table) {
-            $table->foreignId('machine_id')->nullable()->after('station_id')->constrained('m_machines')->nullOnDelete();
+            $table->foreignUuid('machine_id')->nullable()->after('station_id')->constrained('m_machines')->nullOnDelete();
         });
     }
 

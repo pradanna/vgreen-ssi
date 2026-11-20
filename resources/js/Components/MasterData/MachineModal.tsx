@@ -141,7 +141,7 @@ export default function MachineModal({
                                         </label>
                                         <select
                                             value={data.category_id}
-                                            onChange={(e) => setData('category_id', Number(e.target.value))}
+                                            onChange={(e) => setData('category_id', e.target.value)}
                                             className={`w-full bg-white border rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 ${
                                                 errors.category_id ? 'border-rose-400' : 'border-slate-200'
                                             }`}

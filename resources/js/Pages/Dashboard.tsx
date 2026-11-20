@@ -6,12 +6,14 @@ import { PaginatedData } from '@/types/pagination';
 import Pagination from '@/Components/Common/Pagination';
 import ActionDropdown from '@/Components/Common/ActionDropdown';
 import StationDetailDrawer from '@/Components/Map/StationDetailDrawer';
+import StationFilterDrawer, { StationFilterValues } from '@/Components/Common/StationFilterDrawer';
 import UserDropdown from '@/Components/Navigation/UserDropdown';
 import StationFormModal from '@/Components/Admin/StationFormModal';
 import MassImportModal from '@/Components/Admin/MassImportModal';
 import SidebarNav from '@/Components/Navigation/SidebarNav';
 import SidebarTrigger from '@/Components/Navigation/SidebarTrigger';
 import Select2, { Select2Option } from '@/Components/Common/Select2';
+import { formatWhatsAppUrl } from '@/utils/whatsapp';
 import { 
     LayoutGrid, 
     BookOpen, 
@@ -51,12 +53,27 @@ import {
     AlertTriangle,
     MoreVertical,
     Eye,
-    Target
+    Target,
+    SlidersHorizontal,
+    RotateCcw,
+    Compass,
+    Building2,
+    MessageCircle
 } from 'lucide-react';
 
 interface DashboardProps extends PageProps {
     stations: Station[] | PaginatedData<Station>;
     stats: StatsSummary;
+    stationFilterLookups?: Array<{
+        id: string;
+        code: string;
+        name: string;
+        province: string;
+        city: string;
+        facility_type_id: FacilityTypeId;
+        status_id: StationStatusId;
+        landlord_type?: 'SWASTA' | 'PEMERINTAH' | null;
+    }>;
     monthlyRolloutData?: MonthlyRolloutPoint[];
     provinceTargets?: ProvinceTargetItem[];
     activeNav?: 'dashboard' | 'stations' | 'gis' | 'inspections' | 'settings' | 'master-data' | 'targets';
@@ -71,6 +88,7 @@ interface DashboardProps extends PageProps {
 export default function Dashboard({
     auth,
     stations = [],
+    stationFilterLookups = [],
     stats,
     monthlyRolloutData = [],
     provinceTargets = [],
@@ -143,28 +161,79 @@ export default function Dashboard({
         ? laggingProvinces
         : percentageProvinces;
 
-    // Initialize filtering states from URL query params if present
+    // Helper functions for localStorage filter persistence
+    const getSavedFilters = (): Partial<StationFilterValues> => {
+        if (typeof window === 'undefined') return {};
+        try {
+            const raw = localStorage.getItem('vgreen_station_filters_v1');
+            if (raw) return JSON.parse(raw);
+        } catch {}
+        return {};
+    };
+
+    const saveFiltersToLocal = (filters: Partial<StationFilterValues>) => {
+        if (typeof window === 'undefined') return;
+        try {
+            const existing = getSavedFilters();
+            const merged = { ...existing, ...filters };
+            localStorage.setItem('vgreen_station_filters_v1', JSON.stringify(merged));
+        } catch {}
+    };
+
+    const clearFiltersFromLocal = () => {
+        if (typeof window === 'undefined') return;
+        try {
+            localStorage.removeItem('vgreen_station_filters_v1');
+        } catch {}
+    };
+
+    // Initialize filtering states from URL query params or localStorage
+    const savedLocalFilters = useMemo(() => getSavedFilters(), []);
     const queryParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     const [searchQuery, setSearchQuery] = useState(queryParams.get('search') || '');
     const [selectedFacilityType, setSelectedFacilityType] = useState<FacilityTypeId | 'ALL'>(
-        (queryParams.get('facility_type') as any) || 'ALL'
+        (queryParams.get('facility_type') as any) || savedLocalFilters.facilityType || 'ALL'
     );
     const [selectedStatus, setSelectedStatus] = useState<StationStatusId | 'ALL'>(
-        (queryParams.get('status') as any) || (activeNav === 'inspections' ? 'CONSTRUCTION' : 'ALL')
+        (queryParams.get('status') as any) || savedLocalFilters.status || (activeNav === 'inspections' ? 'CONSTRUCTION' : 'ALL')
     );
     const [selectedLandlordType, setSelectedLandlordType] = useState<'ALL' | 'SWASTA' | 'PEMERINTAH'>(
-        (queryParams.get('landlord_type') as any) || 'ALL'
+        (queryParams.get('landlord_type') as any) || savedLocalFilters.landlordType || 'ALL'
     );
     const [selectedDocStatus, setSelectedDocStatus] = useState<'ALL' | 'COMPLETE' | 'INCOMPLETE'>(
         (queryParams.get('doc_status') as any) || 'ALL'
     );
+    const [selectedProvince, setSelectedProvince] = useState<string>(
+        queryParams.get('province') || savedLocalFilters.province || 'ALL'
+    );
+    const [selectedCity, setSelectedCity] = useState<string>(
+        queryParams.get('city') || savedLocalFilters.city || 'ALL'
+    );
+    const [selectedStationId, setSelectedStationId] = useState<string>(
+        queryParams.get('station_id') || savedLocalFilters.stationId || 'ALL'
+    );
+    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
     const [selectedStation, setSelectedStation] = useState<Station | null>(null);
 
     // Modals for Milestone 5 & Action Dropdown
     const [isAddStationModalOpen, setIsAddStationModalOpen] = useState(false);
     const [editingStation, setEditingStation] = useState<Station | null>(null);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [openMenuStationId, setOpenMenuStationId] = useState<number | null>(null);
+    const [openMenuStationId, setOpenMenuStationId] = useState<string | null>(null);
+
+    // Count of currently active filters
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (selectedProvince !== 'ALL') count++;
+        if (selectedCity !== 'ALL') count++;
+        if (selectedStationId !== 'ALL') count++;
+        if (selectedStatus !== 'ALL') count++;
+        if (selectedFacilityType !== 'ALL') count++;
+        if (isInternal && selectedLandlordType !== 'ALL') count++;
+        if (isInternal && selectedDocStatus !== 'ALL') count++;
+        if (searchQuery.trim() !== '') count++;
+        return count;
+    }, [selectedProvince, selectedCity, selectedStationId, selectedStatus, selectedFacilityType, selectedLandlordType, selectedDocStatus, isInternal, searchQuery]);
 
     // Apply server-side filter request for paginated tables
     const applyServerFilter = (overrides: Record<string, any> = {}) => {
@@ -176,6 +245,9 @@ export default function Dashboard({
             status: selectedStatus,
             landlord_type: selectedLandlordType,
             doc_status: selectedDocStatus,
+            province: selectedProvince,
+            city: selectedCity,
+            station_id: selectedStationId,
             per_page: (stations as PaginatedData<Station>)?.per_page || 10,
             page: 1, // Reset to page 1 on filter changes
             ...overrides,
@@ -211,8 +283,33 @@ export default function Dashboard({
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
+    const handleApplyDrawerFilters = (filters: StationFilterValues) => {
+        setSelectedProvince(filters.province);
+        setSelectedCity(filters.city);
+        setSelectedStationId(filters.stationId);
+        setSelectedStatus(filters.status);
+        setSelectedFacilityType(filters.facilityType);
+        if (filters.landlordType) {
+            setSelectedLandlordType(filters.landlordType);
+        }
+
+        saveFiltersToLocal(filters);
+
+        if (isPaginated) {
+            applyServerFilter({
+                province: filters.province,
+                city: filters.city,
+                station_id: filters.stationId,
+                status: filters.status,
+                facility_type: filters.facilityType,
+                landlord_type: filters.landlordType,
+            });
+        }
+    };
+
     const handleStatusFilterChange = (st: StationStatusId | 'ALL') => {
         setSelectedStatus(st);
+        saveFiltersToLocal({ status: st });
         if (isPaginated) {
             applyServerFilter({ status: st });
         }
@@ -220,6 +317,7 @@ export default function Dashboard({
 
     const handleFacilityTypeFilterChange = (ft: FacilityTypeId | 'ALL') => {
         setSelectedFacilityType(ft);
+        saveFiltersToLocal({ facilityType: ft });
         if (isPaginated) {
             applyServerFilter({ facility_type: ft });
         }
@@ -227,6 +325,7 @@ export default function Dashboard({
 
     const handleLandlordTypeFilterChange = (lt: 'ALL' | 'SWASTA' | 'PEMERINTAH') => {
         setSelectedLandlordType(lt);
+        saveFiltersToLocal({ landlordType: lt });
         if (isPaginated) {
             applyServerFilter({ landlord_type: lt });
         }
@@ -239,6 +338,30 @@ export default function Dashboard({
         }
     };
 
+    const handleResetAllFilters = () => {
+        setSelectedProvince('ALL');
+        setSelectedCity('ALL');
+        setSelectedStationId('ALL');
+        setSelectedStatus('ALL');
+        setSelectedFacilityType('ALL');
+        setSelectedLandlordType('ALL');
+        setSelectedDocStatus('ALL');
+        setSearchQuery('');
+        clearFiltersFromLocal();
+        if (isPaginated) {
+            applyServerFilter({
+                province: 'ALL',
+                city: 'ALL',
+                station_id: 'ALL',
+                status: 'ALL',
+                facility_type: 'ALL',
+                landlord_type: 'ALL',
+                doc_status: 'ALL',
+                search: '',
+            });
+        }
+    };
+
     // Filter stations (When paginated, data is already filtered on server)
     const filteredStations = useMemo(() => {
         if (isPaginated) {
@@ -246,6 +369,15 @@ export default function Dashboard({
         }
 
         return stationList.filter((station) => {
+            if (selectedProvince !== 'ALL' && station.province?.trim() !== selectedProvince.trim()) {
+                return false;
+            }
+            if (selectedCity !== 'ALL' && station.city?.trim() !== selectedCity.trim()) {
+                return false;
+            }
+            if (selectedStationId !== 'ALL' && station.id !== selectedStationId) {
+                return false;
+            }
             if (selectedFacilityType !== 'ALL' && station.facility_type_id !== selectedFacilityType) {
                 return false;
             }
@@ -263,15 +395,15 @@ export default function Dashboard({
                 const query = searchQuery.toLowerCase();
                 const matchCode = station.code.toLowerCase().includes(query);
                 const matchName = station.name.toLowerCase().includes(query);
-                const matchCity = station.city.toLowerCase().includes(query);
-                const matchProvince = station.province.toLowerCase().includes(query);
+                const matchCity = station.city?.toLowerCase().includes(query);
+                const matchProvince = station.province?.toLowerCase().includes(query);
                 if (!matchCode && !matchName && !matchCity && !matchProvince) {
                     return false;
                 }
             }
             return true;
         });
-    }, [isPaginated, stationList, selectedFacilityType, selectedStatus, selectedLandlordType, selectedDocStatus, searchQuery]);
+    }, [isPaginated, stationList, selectedProvince, selectedCity, selectedStationId, selectedFacilityType, selectedStatus, selectedLandlordType, selectedDocStatus, searchQuery]);
 
     // Breakdown construction facility types for Card 2
     const constructionEvcs = useMemo(() => 
@@ -343,12 +475,38 @@ export default function Dashboard({
         return stationList.filter(s => s.document_compliance?.is_complete).length;
     }, [stats.complete_compliance_count, stationList]);
 
+    // Full station lookups for drawers and selectors (480 nationwide stations)
+    const lookupStations = useMemo(() => {
+        if (stationFilterLookups && stationFilterLookups.length > 0) {
+            return stationFilterLookups;
+        }
+        return stationList;
+    }, [stationFilterLookups, stationList]);
+
     // Available provinces from targets and stations for dynamic filtering
     const availableProvinces = useMemo(() => {
         const fromTargets = (provinceTargets || []).map(t => t.province_name);
-        const fromStations = (stationList || []).map(s => s.province);
+        const fromStations = (lookupStations || []).map(s => s.province);
         return Array.from(new Set([...fromTargets, ...fromStations].filter(Boolean))).sort((a, b) => a.localeCompare(b));
-    }, [provinceTargets, stationList]);
+    }, [provinceTargets, lookupStations]);
+
+    // Extract unique Cities cascading from selectedProvince
+    const availableCities = useMemo(() => {
+        const cities = new Set<string>();
+        lookupStations.forEach((s) => {
+            if (selectedProvince === 'ALL' || s.province?.trim() === selectedProvince.trim()) {
+                if (s.city && s.city.trim() !== '') {
+                    cities.add(s.city.trim());
+                }
+            }
+        });
+        return Array.from(cities).sort();
+    }, [lookupStations, selectedProvince]);
+
+    // Available stations list for specific station picker
+    const availableStationsList = useMemo(() => {
+        return lookupStations.map(s => ({ id: s.id, code: s.code, name: s.name }));
+    }, [lookupStations]);
 
     // Select2 options for province filter in S-Curve Rollout chart
     const provinceSelectOptions = useMemo<Select2Option<string>[]>(() => {
@@ -579,7 +737,6 @@ export default function Dashboard({
             <SidebarNav 
                 user={user} 
                 activeNav={activeNav} 
-                pendingCount={stats.construction + stats.surveyed} 
             />
 
             {/* MAIN CONTENT AREA */}
@@ -591,22 +748,13 @@ export default function Dashboard({
                         <SidebarTrigger />
                         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
                             {activeNav === 'gis'
-                                ? 'Peta GIS Sebaran Nasional' 
+                                ? 'Peta Stasiun' 
                                 : activeNav === 'stations' 
                                 ? (isVGreen ? 'Katalog Titik Stasiun Terverifikasi' : 'Daftar Titik Stasiun & Kelola Aset')
                                 : activeNav === 'inspections'
                                 ? 'Sesi Verifikasi & Audit QC Lapangan'
                                 : (isVGreen ? 'Executive Monitoring Jaringan V-Green' : 'Ringkasan Infrastruktur')}
                         </h1>
-
-                        {activeNav === 'stations' && (
-                            <div className="hidden sm:flex items-center gap-2">
-                                <span className="px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-700 font-bold text-xs border border-blue-200/60 flex items-center gap-1.5 shadow-2xs">
-                                    <TableIcon className="w-3.5 h-3.5" />
-                                    <span>{isVGreen ? 'Tabel Stasiun Terverifikasi' : 'Tabel Master Titik Stasiun'}</span>
-                                </span>
-                            </div>
-                        )}
                     </div>
 
                     {/* Right Controls: Search + Notif + Role Switcher */}
@@ -647,15 +795,62 @@ export default function Dashboard({
                     {/* TOP METRICS ROW (4 CARDS) - EXECUTIVE DIRECTOR LENS (Visible on Dashboard) */}
                     {activeNav === 'dashboard' && (
                     <div className="grid grid-cols-1 @lg:grid-cols-2 @4xl:grid-cols-4 gap-6">
-                        {/* CARD 1: Total Jaringan Stasiun */}
+                        {/* CARD 1: Target Jaringan Nasional */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-semibold text-slate-400 tracking-normal">
-                                        Total Jaringan Stasiun
+                                        Target Jaringan Nasional
                                     </span>
-                                    <span className="inline-flex items-center text-2xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                                        Portofolio Aktif <ArrowUpRight className="w-3 h-3 ml-0.5" />
+                                    <span className="inline-flex items-center text-2xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100/60">
+                                        2026
+                                    </span>
+                                </div>
+                                <div className="mt-2">
+                                    <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                                        {(stats.national_target || 2120).toLocaleString('id-ID')} Titik Target
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 pt-6">
+                                <div>
+                                    <div className="flex justify-between text-xs font-semibold mb-1.5">
+                                        <span className="text-slate-400">Target EVCS Mobil</span>
+                                        <span className="text-slate-800 font-bold">{(stats.national_target_evcs || 1679).toLocaleString('id-ID')} Titik</span>
+                                    </div>
+                                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-brand-600 rounded-full transition-all duration-500" 
+                                            style={{ width: `${((stats.national_target_evcs || 1679) / (stats.national_target || 2120)) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between text-xs font-semibold mb-1.5">
+                                        <span className="text-slate-400">Target BSS Motor</span>
+                                        <span className="text-slate-800 font-bold">{(stats.national_target_bss || 441).toLocaleString('id-ID')} Titik</span>
+                                    </div>
+                                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                        <div 
+                                            className="h-full bg-accent-500 rounded-full transition-all duration-500" 
+                                            style={{ width: `${((stats.national_target_bss || 441) / (stats.national_target || 2120)) * 100}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CARD 2: Total Jaringan */}
+                        <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-xs font-semibold text-slate-400 tracking-normal">
+                                        Total Jaringan
+                                    </span>
+                                    <span className="inline-flex items-center text-2xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100/60">
+                                        Portofolio
                                     </span>
                                 </div>
                                 <div className="mt-2">
@@ -668,90 +863,41 @@ export default function Dashboard({
                             <div className="space-y-3 pt-6">
                                 <div>
                                     <div className="flex justify-between text-xs font-semibold mb-1.5">
-                                        <span className="text-slate-400">EVCS Mobil Listrik</span>
-                                        <span className="text-slate-800 font-bold">{stats.evcs} Titik</span>
+                                        <span className="text-slate-400">Stasiun Beroperasi</span>
+                                        <span className="text-slate-800 font-bold">{stats.operational} Live</span>
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-brand-600 rounded-full transition-all duration-500" 
-                                            style={{ width: `${(stats.evcs / (stats.total || 1)) * 100}%` }}
+                                            className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
+                                            style={{ width: `${(stats.operational / (stats.total || 1)) * 100}%` }}
                                         />
                                     </div>
                                 </div>
 
                                 <div>
                                     <div className="flex justify-between text-xs font-semibold mb-1.5">
-                                        <span className="text-slate-400">BSS Motor Listrik</span>
-                                        <span className="text-slate-800 font-bold">{stats.bss} Titik</span>
+                                        <span className="text-slate-400">In Progress</span>
+                                        <span className="text-slate-800 font-bold">{stats.construction} Titik</span>
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
-                                            className="h-full bg-accent-500 rounded-full transition-all duration-500" 
-                                            style={{ width: `${(stats.bss / (stats.total || 1)) * 100}%` }}
+                                            className="h-full bg-amber-500 rounded-full transition-all duration-500" 
+                                            style={{ width: `${(stats.construction / (stats.total || 1)) * 100}%` }}
                                         />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* CARD 2: Dalam Pembangunan (WIP) */}
+                        {/* CARD 3: Pencapaian Target Operasional */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
                                 <div className="flex items-center justify-between">
                                     <span className="text-xs font-semibold text-slate-400 tracking-normal">
-                                        Dalam Pembangunan
+                                        Pencapaian Target Operasional
                                     </span>
-                                    <span className="inline-flex items-center gap-1.5 text-2xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100/60">
-                                        <Hammer className="w-3 h-3 text-blue-600" />
-                                        <span>Fisik Aktif</span>
-                                    </span>
-                                </div>
-                                <div className="mt-2">
-                                    <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                                        {stats.construction} Titik
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 pt-6">
-                                <div>
-                                    <div className="flex justify-between text-xs font-semibold mb-1.5">
-                                        <span className="text-slate-400">EVCS Mobil Listrik</span>
-                                        <span className="text-slate-800 font-bold">{constructionEvcs} Titik</span>
-                                    </div>
-                                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-brand-600 rounded-full transition-all duration-500" 
-                                            style={{ width: `${(constructionEvcs / (stats.construction || 1)) * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div className="flex justify-between text-xs font-semibold mb-1.5">
-                                        <span className="text-slate-400">BSS / Swap Station</span>
-                                        <span className="text-slate-800 font-bold">{constructionBss + constructionCombined} Titik</span>
-                                    </div>
-                                    <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                        <div 
-                                            className="h-full bg-accent-500 rounded-full transition-all duration-500" 
-                                            style={{ width: `${((constructionBss + constructionCombined) / (stats.construction || 1)) * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* CARD 3: Stasiun Beroperasi (Live) */}
-                        <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
-                            <div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-400 tracking-normal">
-                                        Stasiun Beroperasi
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5 text-2xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100/60">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                        <span>Live Ready</span>
+                                    <span className="inline-flex items-center text-2xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100/60">
+                                        Live
                                     </span>
                                 </div>
                                 <div className="mt-2">
@@ -763,14 +909,16 @@ export default function Dashboard({
 
                             <div className="pt-5 space-y-3">
                                 <div>
-                                    <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-1.5">
-                                        <span>Kesiapan Operasi Nasional</span>
-                                        <span className="text-slate-900 font-bold">{stats.operational} / {stats.total} Titik</span>
+                                    <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-1.5 gap-2">
+                                        <span className="shrink-0 text-slate-400">Kesiapan</span>
+                                        <span className="text-slate-900 font-bold text-[11px] sm:text-xs text-right whitespace-nowrap">
+                                            {stats.operational} / {(stats.national_target || 2120).toLocaleString('id-ID')} Titik ({(((stats.operational || 0) / (stats.national_target || 2120)) * 100).toFixed(1).replace('.', ',')}% Tercapai)
+                                        </span>
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
                                             className="h-full bg-emerald-500 rounded-full transition-all duration-500" 
-                                            style={{ width: `${(stats.operational / (stats.total || 1)) * 100}%` }}
+                                            style={{ width: `${Math.min(100, ((stats.operational || 0) / (stats.national_target || 2120)) * 100)}%` }}
                                         />
                                     </div>
                                 </div>
@@ -780,7 +928,7 @@ export default function Dashboard({
                                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                         Terhubung PLN & Komisioning
                                     </span>
-                                    <span className="font-semibold text-slate-700">Uptime 99.4%</span>
+                                    <span className="font-semibold text-emerald-600">Siap Operasi</span>
                                 </div>
                             </div>
                         </div>
@@ -792,13 +940,12 @@ export default function Dashboard({
                                     <span className="text-xs font-semibold text-slate-400 tracking-normal">
                                         Masa Kontrak Jatuh Tempo
                                     </span>
-                                    <span className={`inline-flex items-center gap-1 text-2xs font-bold px-2.5 py-0.5 rounded-full border ${
+                                    <span className={`inline-flex items-center text-2xs font-bold px-2.5 py-0.5 rounded-full border ${
                                         (isVGreen ? vgreenExpiring : totalExpiringContracts) > 0 
                                             ? 'text-amber-700 bg-amber-50 border-amber-200/60' 
                                             : 'text-slate-600 bg-slate-50 border-slate-200/60'
                                     }`}>
-                                        <AlertTriangle className="w-3 h-3 text-amber-600" />
-                                        <span>&lt; 90 Hari</span>
+                                        &lt; 90 Hari
                                     </span>
                                 </div>
                                 <div className="mt-2">
@@ -811,12 +958,12 @@ export default function Dashboard({
                             <div className="space-y-3 pt-6">
                                 {/* Baris 1: Kontrak dengan PT SSI (Untuk V-Green hanya 1 garis ini) */}
                                 <div>
-                                    <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
-                                        <span className="text-slate-500 flex items-center gap-1.5">
+                                    <div className="flex justify-between items-center text-[11px] font-semibold mb-1.5 gap-2">
+                                        <span className="text-slate-500 flex items-center gap-1.5 min-w-0">
                                             <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0"></span>
-                                            {isVGreen ? 'Kontrak dengan PT SSI (< 90 Hari)' : 'Kontrak dengan V-Green (< 90 Hari)'}
+                                            <span className="truncate">{isVGreen ? 'Kontrak dengan PT SSI (< 90 Hari)' : 'Kontrak dengan V-Green (< 90 Hari)'}</span>
                                         </span>
-                                        <span className="text-blue-700 font-bold">{vgreenExpiring} Kontrak</span>
+                                        <span className="text-blue-700 font-bold shrink-0">{vgreenExpiring} Kontrak</span>
                                     </div>
                                     <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                         <div 
@@ -825,7 +972,7 @@ export default function Dashboard({
                                         />
                                     </div>
                                     {isVGreen && (
-                                        <div className="text-3xs text-slate-400 mt-1.5 font-medium">
+                                        <div className="text-3xs text-slate-400 mt-1.5 font-medium truncate">
                                             {vgreenExpiring} dari {stats.operational} stasiun operasional mendekati batas waktu kontrak
                                         </div>
                                     )}
@@ -834,12 +981,12 @@ export default function Dashboard({
                                 {/* Baris 2 Internal: Kontrak dengan Pemilik Lahan (Hanya Internal PT SSI) */}
                                 {isInternal && (
                                     <div>
-                                        <div className="flex justify-between items-center text-xs font-semibold mb-1.5">
-                                            <span className="text-slate-500 flex items-center gap-1.5">
+                                        <div className="flex justify-between items-center text-[11px] font-semibold mb-1.5 gap-2">
+                                            <span className="text-slate-500 flex items-center gap-1.5 min-w-0">
                                                 <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                                                Kontrak dengan Pemilik Lahan (&lt; 90 Hari)
+                                                <span className="truncate">Kontrak dengan Pemilik Lahan (&lt; 90 Hari)</span>
                                             </span>
-                                            <span className="text-amber-600 font-bold">{landlordExpiring} Kontrak</span>
+                                            <span className="text-amber-600 font-bold shrink-0">{landlordExpiring} Kontrak</span>
                                         </div>
                                         <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                             <div 
@@ -856,7 +1003,7 @@ export default function Dashboard({
 
                     {/* COMPACT KPI METRIC PILLS FOR TITIK STASIUN (Visible on Titik Stasiun view) */}
                     {activeNav === 'stations' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isInternal ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4`}>
                             {/* Metric 1: Total Titik */}
                             <div className="bg-white rounded-2xl p-4 border border-[#EDF1F7] shadow-subtle flex items-center gap-3.5">
                                 <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -868,7 +1015,7 @@ export default function Dashboard({
                                         {stats.total} <span className="text-xs font-semibold text-slate-500">Titik</span>
                                     </div>
                                     <div className="text-3xs text-slate-500 truncate mt-0.5">
-                                        <span className="text-emerald-600 font-bold">{stats.operational} Live</span> • {stats.construction} WIP • {stats.surveyed} Survei
+                                        <span className="text-emerald-600 font-bold">{stats.operational} Live</span> • {stats.construction} In Progress • {stats.surveyed} Survei
                                     </div>
                                 </div>
                             </div>
@@ -903,7 +1050,7 @@ export default function Dashboard({
                                     </div>
                                     <div className="text-3xs text-slate-500 truncate mt-0.5">
                                         {isVGreen ? (
-                                            <span className="font-semibold text-slate-700">{vgreenExpiring} Kontrak Mendekati Jatuh Tempo</span>
+                                             <span className="font-semibold text-slate-700">{vgreenExpiring} Kontrak Mendekati Jatuh Tempo</span>
                                         ) : (
                                             <>
                                                 <span className="font-semibold text-slate-700">{vgreenExpiring} Kontrak V-Green</span> • <span className="font-semibold text-slate-700">{landlordExpiring} Sewa Lahan</span>
@@ -913,34 +1060,28 @@ export default function Dashboard({
                                 </div>
                             </div>
 
-                            {/* Metric 4: Kepatuhan Dokumen / Uptime */}
-                            <div className="bg-white rounded-2xl p-4 border border-[#EDF1F7] shadow-subtle flex items-center gap-3.5">
-                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
-                                    isInternal ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
-                                }`}>
-                                    {isInternal ? <ShieldCheck className="w-5 h-5" /> : <BatteryCharging className="w-5 h-5" />}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="text-2xs font-semibold text-slate-400">
-                                        {isInternal ? 'Kepatuhan Legalitas' : 'Kesiapan Operasi'}
+                            {/* Metric 4: Kepatuhan Dokumen (Hanya untuk Internal PT SSI, dihilangkan untuk V-Green) */}
+                            {isInternal && (
+                                <div className="bg-white rounded-2xl p-4 border border-[#EDF1F7] shadow-subtle flex items-center gap-3.5">
+                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-50 text-emerald-600">
+                                        <ShieldCheck className="w-5 h-5" />
                                     </div>
-                                    <div className="text-xl font-extrabold text-slate-900 leading-tight">
-                                        {isInternal ? (
-                                            <>
-                                                {totalCompleteDocs} / {totalStationsCount}{' '}
-                                                <span className="text-xs font-semibold text-emerald-600">
-                                                    ({Math.round((totalCompleteDocs / (totalStationsCount || 1)) * 100)}%)
-                                                </span>
-                                            </>
-                                        ) : (
-                                            '99.4% Uptime'
-                                        )}
-                                    </div>
-                                    <div className="text-3xs text-slate-500 truncate mt-0.5">
-                                        {isInternal ? 'Dokumen legal & sewaan lengkap' : 'Kesiapan jaringan charging'}
+                                    <div className="min-w-0">
+                                        <div className="text-2xs font-semibold text-slate-400">
+                                            Kepatuhan Legalitas
+                                        </div>
+                                        <div className="text-xl font-extrabold text-slate-900 leading-tight">
+                                            {totalCompleteDocs} / {totalStationsCount}{' '}
+                                            <span className="text-xs font-semibold text-emerald-600">
+                                                ({Math.round((totalCompleteDocs / (totalStationsCount || 1)) * 100)}%)
+                                            </span>
+                                        </div>
+                                        <div className="text-3xs text-slate-500 truncate mt-0.5">
+                                            Dokumen legal & sewaan lengkap
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     )}
 
@@ -1549,7 +1690,7 @@ export default function Dashboard({
                                                 </div>
                                                 <div>
                                                     <div className="text-xs font-bold text-slate-900">
-                                                        Kesiapan Operasi &amp; Uptime Stasiun
+                                                        Kesiapan Jaringan Stasiun
                                                     </div>
                                                     <div className="text-2xs text-slate-400">
                                                         100% stasiun terverifikasi lolos uji inspeksi PT SSI
@@ -1560,8 +1701,8 @@ export default function Dashboard({
                                                 <span className="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/60">
                                                     {stats.operational} Live
                                                 </span>
-                                                <div className="text-3xs font-bold text-slate-500 mt-0.5">
-                                                    Uptime 99.4%
+                                                <div className="text-3xs font-bold text-emerald-600 mt-0.5">
+                                                    Siap Layanan
                                                 </div>
                                             </div>
                                         </div>
@@ -1697,119 +1838,51 @@ export default function Dashboard({
                                 </div>
                             </div>
 
-                            {/* Quick Filter Toolbar with Select2 */}
+                            {/* Quick Filter Toolbar with Drawer Trigger & Search */}
                             <div className="px-6 py-3.5 bg-slate-50/70 border-b border-[#EDF1F7] flex flex-wrap items-center justify-between gap-3 text-xs">
-                                <div className="flex flex-wrap items-center gap-2.5">
-                                    {/* Status Filter */}
-                                    <div className="w-40">
-                                        <Select2
-                                            value={selectedStatus}
-                                            onChange={(val) => handleStatusFilterChange(val as StationStatusId | 'ALL')}
-                                            options={[
-                                                { value: 'ALL', label: 'Semua Status' },
-                                                { value: 'OPERATIONAL', label: 'Operasional', badge: 'Live', badgeColor: 'bg-emerald-100 text-emerald-700' },
-                                                { value: 'CONSTRUCTION', label: 'Konstruksi', badge: 'WIP', badgeColor: 'bg-orange-100 text-orange-700' },
-                                                { value: 'SURVEYED', label: 'Survei', badge: 'Survei', badgeColor: 'bg-amber-100 text-amber-700' },
-                                                { value: 'ON_HOLD', label: 'On Hold', badge: 'Hold', badgeColor: 'bg-rose-100 text-rose-700' },
-                                            ]}
-                                            placeholder="Pilih Status..."
-                                            isSearchable={false}
-                                            variant="pill"
-                                            size="sm"
-                                        />
-                                    </div>
-
-                                    {/* Facility Type Filter */}
-                                    <div className="w-40">
-                                        <Select2
-                                            value={selectedFacilityType}
-                                            onChange={(val) => handleFacilityTypeFilterChange(val as FacilityTypeId | 'ALL')}
-                                            options={[
-                                                { value: 'ALL', label: 'Semua Layanan' },
-                                                { value: 'EVCS', label: 'EVCS (Mobil)', icon: Car },
-                                                { value: 'BSS', label: 'BSS (Motor)', icon: Motorbike },
-                                                { value: 'COMBINED', label: 'Kombinasi' },
-                                            ]}
-                                            placeholder="Jenis Layanan..."
-                                            isSearchable={false}
-                                            variant="pill"
-                                            size="sm"
-                                        />
-                                    </div>
-
-                                    {/* Landlord Type Filter (Internal) */}
-                                    {isInternal && (
-                                        <div className="w-36">
-                                            <Select2
-                                                value={selectedLandlordType}
-                                                onChange={(val) => handleLandlordTypeFilterChange(val as 'ALL' | 'SWASTA' | 'PEMERINTAH')}
-                                                options={[
-                                                    { value: 'ALL', label: 'Semua Lahan' },
-                                                    { value: 'SWASTA', label: 'Lahan Swasta' },
-                                                    { value: 'PEMERINTAH', label: 'Lahan Pemda' },
-                                                ]}
-                                                placeholder="Tipe Lahan..."
-                                                isSearchable={false}
-                                                variant="pill"
-                                                size="sm"
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Document Status Filter (Internal) */}
-                                    {isInternal && (
-                                        <div className="w-44">
-                                            <Select2
-                                                value={selectedDocStatus}
-                                                onChange={(val) => handleDocStatusFilterChange(val as 'ALL' | 'COMPLETE' | 'INCOMPLETE')}
-                                                options={[
-                                                    { value: 'ALL', label: 'Semua Dokumen' },
-                                                    { value: 'COMPLETE', label: '✓ Lengkap' },
-                                                    { value: 'INCOMPLETE', label: '⚠️ Belum Lengkap' },
-                                                ]}
-                                                placeholder="Kelengkapan Dokumen..."
-                                                isSearchable={false}
-                                                variant="pill"
-                                                size="sm"
-                                            />
-                                        </div>
-                                    )}
+                                <div className="flex items-center gap-2.5">
+                                    {/* Tombol Buka Filter Drawer */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsFilterDrawerOpen(true)}
+                                        className={`px-4 py-2 rounded-xl border text-xs font-bold flex items-center gap-2 transition shadow-2xs cursor-pointer ${
+                                            activeFilterCount > 0 
+                                                ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-xs' 
+                                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                                        }`}
+                                        title="Buka panel filter stasiun (Lokasi, Provinsi, Nama Titik, dsb)"
+                                    >
+                                        <SlidersHorizontal className="w-3.5 h-3.5 text-blue-600" />
+                                        <span>Filter Stasiun</span>
+                                        {activeFilterCount > 0 && (
+                                            <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-2xs font-extrabold flex items-center justify-center">
+                                                {activeFilterCount}
+                                            </span>
+                                        )}
+                                    </button>
 
                                     {/* Reset Filter Button */}
-                                    {(selectedStatus !== 'ALL' || selectedFacilityType !== 'ALL' || selectedLandlordType !== 'ALL' || selectedDocStatus !== 'ALL') && (
+                                    {activeFilterCount > 0 && (
                                         <button
-                                            onClick={() => {
-                                                setSelectedStatus('ALL');
-                                                setSelectedFacilityType('ALL');
-                                                setSelectedLandlordType('ALL');
-                                                setSelectedDocStatus('ALL');
-                                                if (isPaginated) {
-                                                    applyServerFilter({
-                                                        status: 'ALL',
-                                                        facility_type: 'ALL',
-                                                        landlord_type: 'ALL',
-                                                        doc_status: 'ALL',
-                                                    });
-                                                }
-                                            }}
-                                            className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800 font-semibold hover:bg-slate-200/60 rounded-full transition flex items-center gap-1"
+                                            onClick={handleResetAllFilters}
+                                            className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 font-semibold hover:bg-slate-200/60 rounded-xl transition flex items-center gap-1 cursor-pointer"
                                             title="Reset semua filter"
                                         >
-                                            <X className="w-3.5 h-3.5" />
+                                            <RotateCcw className="w-3.5 h-3.5" />
                                             <span>Reset</span>
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Search Box */}
-                                <div className="relative min-w-[220px]">
+                                <div className="relative min-w-[240px] sm:w-80">
                                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="Cari kode, nama, atau kota..."
-                                        className="w-full pl-8 pr-7 py-1.5 bg-white border border-slate-200/80 rounded-xl text-xs placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                        className="w-full pl-8 pr-7 py-2 bg-white border border-slate-200/80 rounded-xl text-xs placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                     />
                                     {searchQuery && (
                                         <button
@@ -1825,15 +1898,185 @@ export default function Dashboard({
                                 </div>
                             </div>
 
+                            {/* ACTIVE FILTER PILLS (REMOVABLE WITH [X]) */}
+                            {activeFilterCount > 0 && (
+                                <div className="px-6 py-2.5 bg-slate-50/90 border-b border-[#EDF1F7] flex flex-wrap items-center gap-2 text-xs">
+                                    <span className="text-2xs font-bold text-slate-400 uppercase tracking-wider mr-1">
+                                        Filter Aktif ({activeFilterCount}):
+                                    </span>
+
+                                    {/* Pill: Provinsi */}
+                                    {selectedProvince !== 'ALL' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 shadow-2xs">
+                                            <MapPin className="w-3 h-3 text-blue-500" />
+                                            <span>Provinsi: {selectedProvince}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedProvince('ALL');
+                                                    setSelectedCity('ALL');
+                                                    saveFiltersToLocal({ province: 'ALL', city: 'ALL' });
+                                                    if (isPaginated) applyServerFilter({ province: 'ALL', city: 'ALL' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-blue-200/70 text-blue-600 hover:text-blue-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus filter provinsi"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Pill: Kota */}
+                                    {selectedCity !== 'ALL' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60 shadow-2xs">
+                                            <Building2 className="w-3 h-3 text-blue-500" />
+                                            <span>Kota: {selectedCity}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedCity('ALL');
+                                                    saveFiltersToLocal({ city: 'ALL' });
+                                                    if (isPaginated) applyServerFilter({ city: 'ALL' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-blue-200/70 text-blue-600 hover:text-blue-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus filter kota"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Pill: Spesifik Titik */}
+                                    {selectedStationId !== 'ALL' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-2xs">
+                                            <Compass className="w-3 h-3 text-indigo-500" />
+                                            <span>Titik: {availableStationsList.find(s => s.id === selectedStationId)?.name || selectedStationId}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedStationId('ALL');
+                                                    saveFiltersToLocal({ stationId: 'ALL' });
+                                                    if (isPaginated) applyServerFilter({ station_id: 'ALL' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-indigo-200/70 text-indigo-600 hover:text-indigo-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus filter titik stasiun"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Pill: Status */}
+                                    {selectedStatus !== 'ALL' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 shadow-2xs">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                            <span>Status: {selectedStatus === 'OPERATIONAL' ? 'Operasional' : selectedStatus === 'CONSTRUCTION' ? 'In Progress' : selectedStatus === 'SURVEYED' ? 'Survei' : 'On Hold'}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedStatus('ALL');
+                                                    saveFiltersToLocal({ status: 'ALL' });
+                                                    if (isPaginated) applyServerFilter({ status: 'ALL' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-emerald-200/70 text-emerald-600 hover:text-emerald-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus filter status"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Pill: Layanan */}
+                                    {selectedFacilityType !== 'ALL' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200/60 shadow-2xs">
+                                            <Car className="w-3 h-3 text-purple-500" />
+                                            <span>Layanan: {selectedFacilityType === 'EVCS' ? 'EVCS Mobil' : selectedFacilityType === 'BSS' ? 'BSS Motor' : 'Kombinasi'}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedFacilityType('ALL');
+                                                    saveFiltersToLocal({ facilityType: 'ALL' });
+                                                    if (isPaginated) applyServerFilter({ facility_type: 'ALL' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-purple-200/70 text-purple-600 hover:text-purple-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus filter layanan"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Pill: Lahan (Internal) */}
+                                    {isInternal && selectedLandlordType !== 'ALL' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200/60 shadow-2xs">
+                                            <span>Lahan: {selectedLandlordType === 'SWASTA' ? 'Swasta' : 'Pemda/BUMN'}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedLandlordType('ALL');
+                                                    saveFiltersToLocal({ landlordType: 'ALL' });
+                                                    if (isPaginated) applyServerFilter({ landlord_type: 'ALL' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-amber-200/70 text-amber-600 hover:text-amber-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus filter lahan"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Pill: Doc Status (Internal) */}
+                                    {isInternal && selectedDocStatus !== 'ALL' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200/60 shadow-2xs">
+                                            <span>Dokumen: {selectedDocStatus === 'COMPLETE' ? 'Lengkap' : 'Belum Lengkap'}</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedDocStatus('ALL');
+                                                    if (isPaginated) applyServerFilter({ doc_status: 'ALL' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-teal-200/70 text-teal-600 hover:text-teal-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus filter dokumen"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Pill: Search Query */}
+                                    {searchQuery.trim() !== '' && (
+                                        <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 shadow-2xs">
+                                            <Search className="w-3 h-3 text-slate-400" />
+                                            <span>Cari: "{searchQuery}"</span>
+                                            <button
+                                                onClick={() => {
+                                                    setSearchQuery('');
+                                                    if (isPaginated) applyServerFilter({ search: '' });
+                                                }}
+                                                className="w-4 h-4 rounded-full hover:bg-slate-200/70 text-slate-600 hover:text-slate-900 flex items-center justify-center transition cursor-pointer"
+                                                title="Hapus kata pencarian"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </span>
+                                    )}
+
+                                    {/* Reset Semua Filter */}
+                                    <button
+                                        onClick={handleResetAllFilters}
+                                        className="ml-auto text-2xs text-rose-600 hover:text-rose-800 font-bold hover:underline py-1 transition flex items-center gap-1 cursor-pointer"
+                                        title="Reset semua kriteria filter"
+                                    >
+                                        <RotateCcw className="w-3 h-3" />
+                                        <span>Reset Semua</span>
+                                    </button>
+                                </div>
+                            )}
+
                             {/* Data Table */}
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-[#EDF1F7] text-xs font-bold text-slate-400 select-none">
-                                            <th className="py-4 pl-6 pr-3 w-10">
-                                                <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
-                                            </th>
-                                            <th className="py-4 px-4">
+                                            {isInternal && (
+                                                <th className="py-4 pl-6 pr-3 w-10">
+                                                    <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
+                                                </th>
+                                            )}
+                                            <th className={`py-4 ${isInternal ? 'px-4' : 'pl-6 pr-4'}`}>
                                                 <div className="flex items-center gap-1.5 hover:text-slate-600 cursor-pointer">
                                                     <span>Kode & Nama Stasiun</span>
                                                     <ArrowUpDown className="w-3 h-3" />
@@ -1853,7 +2096,7 @@ export default function Dashboard({
                                             </th>
                                             <th className="py-4 px-4">
                                                 <div className="flex items-center gap-1.5 hover:text-slate-600 cursor-pointer">
-                                                    <span>Mesin & Kapasitas</span>
+                                                    <span>Jumlah Mesin</span>
                                                     <ArrowUpDown className="w-3 h-3" />
                                                 </div>
                                             </th>
@@ -1896,10 +2139,12 @@ export default function Dashboard({
                                                         isSelected ? 'bg-blue-50/50' : ''
                                                     }`}
                                                 >
-                                                    <td className="py-4 pl-6 pr-3" onClick={(e) => e.stopPropagation()}>
-                                                        <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
-                                                    </td>
-                                                    <td className="py-4 px-4 max-w-[200px]">
+                                                    {isInternal && (
+                                                        <td className="py-4 pl-6 pr-3" onClick={(e) => e.stopPropagation()}>
+                                                            <input type="checkbox" className="rounded-sm border-slate-300 text-blue-600 focus:ring-0 cursor-pointer" />
+                                                        </td>
+                                                    )}
+                                                    <td className={`py-4 ${isInternal ? 'px-4' : 'pl-6 pr-4'} max-w-[200px]`}>
                                                         <div className="font-bold text-slate-900 leading-snug truncate" title={station.name}>
                                                             {station.name}
                                                         </div>
@@ -1909,16 +2154,22 @@ export default function Dashboard({
                                                     </td>
                                                     <td className="py-4 px-4">
                                                         <div 
-                                                            className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-100 text-slate-700 shadow-2xs" 
+                                                            className={`inline-flex items-center justify-center shadow-2xs transition-all ${
+                                                                station.facility_type_id === 'COMBINED' 
+                                                                    ? 'h-8 px-2.5 rounded-xl bg-purple-50 text-purple-700 border border-purple-200/60' 
+                                                                    : station.facility_type_id === 'BSS'
+                                                                    ? 'w-8 h-8 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                                                                    : 'w-8 h-8 rounded-xl bg-blue-50 text-blue-700 border border-blue-200/60'
+                                                            }`} 
                                                             title={station.facility_type?.name || station.facility_type_id}
                                                         >
                                                             {station.facility_type_id === 'EVCS' && <Car className="w-4 h-4 text-blue-600" />}
                                                             {station.facility_type_id === 'BSS' && <Motorbike className="w-4 h-4 text-emerald-600" />}
                                                             {station.facility_type_id === 'COMBINED' && (
-                                                                <span className="flex items-center gap-0.5 text-indigo-600">
-                                                                    <Car className="w-3.5 h-3.5" />
-                                                                    <span className="text-[9px] opacity-60 font-bold">+</span>
-                                                                    <Motorbike className="w-3.5 h-3.5" />
+                                                                <span className="flex items-center gap-1 text-purple-700">
+                                                                    <Car className="w-3.5 h-3.5 shrink-0" />
+                                                                    <span className="text-[10px] font-bold opacity-60 leading-none">+</span>
+                                                                    <Motorbike className="w-3.5 h-3.5 shrink-0" />
                                                                 </span>
                                                             )}
                                                         </div>
@@ -1941,29 +2192,29 @@ export default function Dashboard({
                                                                             {station.landlord_type === 'PEMERINTAH' ? 'Pemda' : 'Swasta'}
                                                                         </span>
                                                                     )}
+                                                                    {isInternal && station.landlord_phone && (
+                                                                        <a
+                                                                            href={formatWhatsAppUrl(
+                                                                                station.landlord_phone,
+                                                                                `Halo ${station.landlord_name ? `Bpk/Ibu ${station.landlord_name}` : 'Pemilik Lahan'}, kami dari tim operasional PT SSI mengenai stasiun ${station.name} (${station.code}).`
+                                                                            )}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 px-1.5 py-0.2 rounded transition shadow-2xs"
+                                                                            title={`Hubungi WhatsApp: ${station.landlord_name || 'Pemilik Lahan'} (${station.landlord_phone})`}
+                                                                        >
+                                                                            <MessageCircle className="w-2.5 h-2.5 text-emerald-600" />
+                                                                            <span>WA</span>
+                                                                        </a>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="font-bold text-slate-900">
-                                                                    {totalPowerKw} kW
-                                                                </span>
-                                                                <span className="text-slate-300">•</span>
-                                                                <span className="text-slate-600 font-medium">
-                                                                    {totalSlots} Slot
-                                                                </span>
-                                                            </div>
-                                                            {station.machines && station.machines.length > 0 ? (
-                                                                <div className="text-2xs text-slate-400 font-medium flex items-center gap-1">
-                                                                    <Cpu className="w-3 h-3 text-slate-400" />
-                                                                    <span>{station.machines.length} Unit Mesin</span>
-                                                                </div>
-                                                            ) : (
-                                                                <span className="text-3xs text-slate-400">Belum ada mesin</span>
-                                                            )}
+                                                        <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                                                            <Cpu className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                                            <span>{station.machines && station.machines.length > 0 ? `${station.machines.length} Unit Mesin` : '0 Unit Mesin'}</span>
                                                         </div>
                                                     </td>
                                                     <td className="py-4 px-4">
@@ -2035,11 +2286,35 @@ export default function Dashboard({
                                                                         onClick={() => {
                                                                             setEditingStation(station);
                                                                         }}
-                                                                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition"
+                                                                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition cursor-pointer"
                                                                     >
                                                                         <Edit2 className="w-3.5 h-3.5 text-slate-500" />
                                                                         <span>Ubah Data</span>
                                                                     </button>
+
+                                                                    {station.landlord_phone ? (
+                                                                        <a
+                                                                            href={formatWhatsAppUrl(
+                                                                                station.landlord_phone,
+                                                                                `Halo ${station.landlord_name ? `Bpk/Ibu ${station.landlord_name}` : 'Pemilik Lahan'}, kami dari tim operasional PT SSI mengenai stasiun ${station.name} (${station.code}).`
+                                                                            )}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="w-full text-left px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 transition cursor-pointer"
+                                                                            title={`Hubungi ${station.landlord_name || 'Pemilik Lahan'} (${station.landlord_phone}) via WhatsApp`}
+                                                                        >
+                                                                            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                                                            <span>Pemilik Lahan</span>
+                                                                        </a>
+                                                                    ) : (
+                                                                        <div
+                                                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-400 flex items-center gap-2 cursor-not-allowed opacity-60"
+                                                                            title="Nomor telepon pemilik lahan belum diisi"
+                                                                        >
+                                                                            <MessageCircle className="w-3.5 h-3.5 text-slate-300" />
+                                                                            <span>Pemilik Lahan (Belum ada)</span>
+                                                                        </div>
+                                                                    )}
 
                                                                     <div className="border-t border-slate-100 my-1" />
 
@@ -2047,7 +2322,7 @@ export default function Dashboard({
                                                                         onClick={(e) => {
                                                                             handleDeleteStation(station, e);
                                                                         }}
-                                                                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition"
+                                                                        className="w-full text-left px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition cursor-pointer"
                                                                     >
                                                                         <Trash2 className="w-3.5 h-3.5 text-rose-500" />
                                                                         <span>Hapus Stasiun</span>
@@ -2079,6 +2354,24 @@ export default function Dashboard({
                 </div>
 
 
+
+                {/* STATION FILTER DRAWER (SLIDE-OVER) */}
+                <StationFilterDrawer
+                    isOpen={isFilterDrawerOpen}
+                    onClose={() => setIsFilterDrawerOpen(false)}
+                    currentFilters={{
+                        province: selectedProvince,
+                        city: selectedCity,
+                        stationId: selectedStationId,
+                        status: selectedStatus,
+                        facilityType: selectedFacilityType,
+                        landlordType: selectedLandlordType,
+                    }}
+                    onApply={handleApplyDrawerFilters}
+                    availableProvinces={availableProvinces}
+                    availableStations={lookupStations}
+                    isInternal={isInternal}
+                />
 
                 {/* STATION DETAIL DRAWER (SLIDE-OVER) */}
                 <StationDetailDrawer

@@ -89,7 +89,10 @@ export default function Select2<T extends string | number = string>({
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
         const estimatedHeight = 280;
-        const menuWidth = Math.max(240, rect.width);
+        const maxAvailableWidth = Math.max(180, window.innerWidth - 24);
+        const isPill = variant === 'pill';
+        const rawWidth = isPill ? Math.max(240, rect.width) : Math.max(220, rect.width);
+        const menuWidth = Math.min(rawWidth, maxAvailableWidth);
 
         const spaceBelow = window.innerHeight - rect.bottom;
         const openUpwards = spaceBelow < estimatedHeight && rect.top > estimatedHeight;
@@ -119,7 +122,7 @@ export default function Select2<T extends string | number = string>({
                 placement: 'bottom',
             });
         }
-    }, [align]);
+    }, [align, variant]);
 
     const handleToggle = () => {
         if (disabled) return;
@@ -269,7 +272,7 @@ export default function Select2<T extends string | number = string>({
                         bottom: coords.bottom !== undefined ? `${coords.bottom}px` : undefined,
                         left: `${coords.left}px`,
                         width: `${coords.width}px`,
-                        maxWidth: '380px',
+                        maxWidth: variant === 'pill' ? '360px' : 'calc(100vw - 24px)',
                         zIndex: 99999,
                     }}
                     className={`bg-white border border-[#EDF1F7] rounded-2xl shadow-[0_16px_36px_rgba(15,23,42,0.16)] p-2 space-y-1.5 animate-in fade-in zoom-in-95 duration-100 ${dropdownClassName}`}

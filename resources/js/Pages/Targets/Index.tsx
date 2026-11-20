@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import { PageProps } from '@/types';
 import { ProvinceTargetItem, TargetSummary } from '@/types/station';
@@ -8,16 +8,14 @@ import SidebarTrigger from '@/Components/Navigation/SidebarTrigger';
 import UserDropdown from '@/Components/Navigation/UserDropdown';
 import Select2, { Select2Option } from '@/Components/Common/Select2';
 import Pagination from '@/Components/Common/Pagination';
+import SortableHeader from '@/Components/Common/SortableHeader';
 import { INDONESIA_REGIONS, getCitiesByProvince } from '@/utils/indonesiaRegions';
 import { 
     Target, 
-    Car, 
-    BatteryCharging, 
     MapPin, 
     Search, 
     Plus, 
     Edit2, 
-    TrendingUp, 
     CheckCircle2, 
     AlertCircle, 
     Layers, 
@@ -28,14 +26,31 @@ import {
     SlidersHorizontal,
     RotateCcw,
     Hammer,
-    Clock
+    Clock,
+    Calendar
 } from 'lucide-react';
 
 interface TargetsPageProps extends PageProps {
-    targets: ProvinceTargetItem[];
+    targets: PaginatedData<ProvinceTargetItem> | ProvinceTargetItem[];
     summary: TargetSummary;
-    availableYears: number[];
-    regions: string[];
+    filters?: {
+        year?: number;
+        search?: string;
+        province?: string;
+        status?: string;
+        sort?: string;
+        per_page?: number;
+    };
+    allProvinces?: { name: string; target_total: number }[];
+    existingTargetsInYear?: {
+        province_name: string;
+        target_evcs: number;
+        target_bss: number;
+        notes?: string | null;
+        year: number;
+    }[];
+    availableYears?: number[];
+    regions?: string[];
 }
 
 // Normalized mapping of all 38 Indonesian provinces to 6 platform target regions
@@ -82,96 +97,179 @@ const PROVINCE_TO_REGION: Record<string, string> = {
 
 export default function TargetsIndex({
     auth,
-    targets = [],
+    targets,
     summary,
-    availableYears = [2026],
+    filters = {
+        year: 2026,
+        search: '',
+        province: 'ALL',
+        status: 'ALL',
+        sort: 'UPDATED_DESC',
+        per_page: 10,
+    },
+    allProvinces = [],
+    existingTargetsInYear = [],
+    availableYears = [2025, 2026, 2027],
     regions = [],
 }: TargetsPageProps) {
     const user = auth.user;
     const isInternal = user.role_id === 'DIRECTOR_SSI' || user.role_id === 'ADMIN_SSI';
 
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedProvince, setSelectedProvince] = useState<string>('ALL');
-    const [sortBy, setSortBy] = useState<string>('UPDATED_DESC');
-    const [statusFilter, setStatusFilter] = useState<string>('ALL');
+    // Normalize targets to PaginatedData structure (supports SSR Laravel paginator or array)
+    const paginatedData: PaginatedData<ProvinceTargetItem> = useMemo(() => {
+        if (targets && 'data' in targets && Array.isArray((targets as any).data)) {
+            return targets as PaginatedData<ProvinceTargetItem>;
+        }
+        const arr = Array.isArray(targets) ? targets : [];
+        return {
+            data: arr,
+            current_page: 1,
+            last_page: 1,
+            per_page: arr.length || 10,
+            total: arr.length,
+            from: arr.length > 0 ? 1 : 0,
+            to: arr.length,
+            links: [],
+            next_page_url: null,
+            prev_page_url: null,
+        };
+    }, [targets]);
+
+    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
+    const [selectedProvince, setSelectedProvince] = useState<string>(filters?.province || 'ALL');
+    const [sortBy, setSortBy] = useState<string>(filters?.sort || 'UPDATED_DESC');
+    const [statusFilter, setStatusFilter] = useState<string>(filters?.status || 'ALL');
     const [editingTarget, setEditingTarget] = useState<ProvinceTargetItem | null>(null);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [createValidationError, setCreateValidationError] = useState<string>('');
 
-    // Options for Province Select2 filter
-    const provinceFilterOptions = useMemo<Select2Option<string>[]>(() => {
-        const list: Select2Option<string>[] = [
-            { value: 'ALL', label: 'Semua Provinsi', badge: targets.length }
-        ];
+    // Keep filter states synchronized when backend sends new props
+    useEffect(() => {
+        setSearchQuery(filters?.search || '');
+        setSelectedProvince(filters?.province || 'ALL');
+        setStatusFilter(filters?.status || 'ALL');
+        setSortBy(filters?.sort || 'UPDATED_DESC');
+    }, [filters]);
 
-        const sortedTargets = [...targets].sort((a, b) => a.province_name.localeCompare(b.province_name));
+    // Apply Server-Side Filters via Inertia router
+    const applyFilters = (overrides: Record<string, any> = {}) => {
+        const nextFilters = {
+            year: overrides.year !== undefined ? overrides.year : (filters?.year || summary.selected_year || 2026),
+            search: overrides.search !== undefined ? overrides.search : searchQuery,
+            province: overrides.province !== undefined ? overrides.province : selectedProvince,
+            status: overrides.status !== undefined ? overrides.status : statusFilter,
+            sort: overrides.sort !== undefined ? overrides.sort : sortBy,
+            per_page: overrides.per_page !== undefined ? overrides.per_page : (filters?.per_page || 10),
+            page: overrides.page !== undefined ? overrides.page : 1,
+            ...overrides,
+        };
 
-        sortedTargets.forEach((t) => {
-            list.push({
-                value: t.province_name,
-                label: t.province_name,
-                badge: `${t.target_total} Titik`,
-            });
-        });
-        return list;
-    }, [targets]);
-
-    const sortOptions: Select2Option<string>[] = [
-        { value: 'UPDATED_DESC', label: 'Terakhir Diperbarui ▾' },
-        { value: 'UPDATED_ASC', label: 'Paling Lama ▴' },
-        { value: 'TARGET_DESC', label: 'Target Terbesar ▾' },
-        { value: 'TARGET_ASC', label: 'Target Terkecil ▴' },
-        { value: 'ACTUAL_DESC', label: 'Realisasi Live Terbanyak ▾' },
-        { value: 'NAME_ASC', label: 'Nama Provinsi (A - Z)' },
-    ];
-
-    // Operational readiness status counts for filter badges (Option 2)
-    const statusCounts = useMemo(() => {
-        let operational = 0;
-        let construction = 0;
-        let planning = 0;
-
-        targets.forEach((t) => {
-            if ((t.actual_live || 0) > 0) {
-                operational++;
-            } else if ((t.in_construction || 0) > 0) {
-                construction++;
-            } else {
-                planning++;
+        const cleanParams: Record<string, any> = {};
+        Object.entries(nextFilters).forEach(([k, v]) => {
+            if (v !== undefined && v !== null && v !== 'ALL' && v !== '') {
+                cleanParams[k] = v;
             }
         });
 
-        return { operational, construction, planning, total: targets.length };
-    }, [targets]);
+        router.get(route('targets.index'), cleanParams, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    };
+
+    // Debounce search input for automatic server querying
+    const isInitialMount = useRef(true);
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+        const timer = setTimeout(() => {
+            if (searchQuery !== (filters?.search || '')) {
+                applyFilters({ search: searchQuery, page: 1 });
+            }
+        }, 400);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Options for Province Select2 filter (shows all registered provinces for the selected year)
+    const provinceFilterOptions = useMemo<Select2Option<string>[]>(() => {
+        const totalCount = allProvinces.length > 0 ? allProvinces.length : summary.total_provinces;
+        const list: Select2Option<string>[] = [
+            { value: 'ALL', label: 'Semua Provinsi', badge: totalCount }
+        ];
+
+        if (allProvinces.length > 0) {
+            allProvinces.forEach((p) => {
+                list.push({
+                    value: p.name,
+                    label: p.name,
+                    badge: `${p.target_total} Titik`,
+                });
+            });
+        } else {
+            paginatedData.data.forEach((t) => {
+                list.push({
+                    value: t.province_name,
+                    label: t.province_name,
+                    badge: `${t.target_total} Titik`,
+                });
+            });
+        }
+        return list;
+    }, [allProvinces, summary.total_provinces, paginatedData.data]);
+
+    const handleSort = (newSort: string) => {
+        setSortBy(newSort);
+        applyFilters({ sort: newSort, page: 1 });
+    };
+
+    // Options for Year in Main Header (Select2 variant="pill")
+    const yearFilterOptions = useMemo<Select2Option<number>[]>(() => {
+        return availableYears.map((yr) => ({
+            value: yr,
+            label: `Tahun ${yr}`,
+            badge: yr === summary.selected_year ? 'Aktif' : undefined,
+        }));
+    }, [availableYears, summary.selected_year]);
+
+    // Options for Year in Create Modal (Select2 variant="default")
+    const yearFormOptions = useMemo<Select2Option<number>[]>(() => {
+        const years = [2025, 2026, 2027, 2028, 2029, 2030];
+        return years.map((yr) => ({
+            value: yr,
+            label: `Tahun ${yr}`,
+            badge: yr === (summary.selected_year || 2026) ? 'Tahun Aktif' : undefined,
+            badgeColor: yr === (summary.selected_year || 2026) ? 'bg-blue-50 text-blue-700 border border-blue-200/60' : undefined,
+        }));
+    }, [summary.selected_year]);
 
     const statusOptions = useMemo<Select2Option<string>[]>(() => [
         { 
             value: 'ALL', 
             label: 'Semua Status Kesiapan', 
-            badge: statusCounts.total 
+            badge: summary.total_provinces 
         },
         { 
             value: 'OPERATIONAL', 
             label: 'Operasional Aktif', 
             subtext: 'Sudah ada stasiun live melayani',
-            badge: statusCounts.operational,
             badgeColor: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
         },
         { 
             value: 'CONSTRUCTION', 
-            label: 'Dalam Pembangunan', 
+            label: 'In Progress', 
             subtext: 'Sedang pembangunan instalasi fisik',
-            badge: statusCounts.construction,
             badgeColor: 'bg-amber-50 text-amber-700 border border-amber-200/60'
         },
         { 
             value: 'PLANNING', 
             label: 'Tahap Perencanaan', 
             subtext: 'Penetapan kuota & persiapan survei',
-            badge: statusCounts.planning,
             badgeColor: 'bg-slate-100 text-slate-700 border border-slate-200/60'
         },
-    ], [statusCounts]);
+    ], [summary.total_provinces]);
 
     const isAnyFilterActive = selectedProvince !== 'ALL' || statusFilter !== 'ALL' || searchQuery.trim() !== '' || sortBy !== 'UPDATED_DESC';
 
@@ -180,112 +278,12 @@ export default function TargetsIndex({
         setStatusFilter('ALL');
         setSearchQuery('');
         setSortBy('UPDATED_DESC');
+        router.get(
+            route('targets.index'),
+            { year: filters?.year || summary.selected_year || 2026 },
+            { preserveState: true, preserveScroll: true, replace: true }
+        );
     };
-
-    // Filter and sort targets
-    const filteredTargets = useMemo(() => {
-        return targets
-            .filter((item) => {
-                if (selectedProvince !== 'ALL' && item.province_name !== selectedProvince) {
-                    return false;
-                }
-                if (statusFilter === 'OPERATIONAL' && (item.actual_live || 0) <= 0) {
-                    return false;
-                }
-                if (statusFilter === 'CONSTRUCTION' && !((item.actual_live || 0) === 0 && (item.in_construction || 0) > 0)) {
-                    return false;
-                }
-                if (statusFilter === 'PLANNING' && !((item.actual_live || 0) === 0 && (item.in_construction || 0) === 0)) {
-                    return false;
-                }
-                if (searchQuery.trim() !== '') {
-                    const q = searchQuery.toLowerCase();
-                    const matchName = item.province_name.toLowerCase().includes(q);
-                    const matchNotes = item.notes ? item.notes.toLowerCase().includes(q) : false;
-                    return matchName || matchNotes;
-                }
-                return true;
-            })
-            .sort((a, b) => {
-                if (sortBy === 'UPDATED_DESC') {
-                    const timeA = a.updated_at_raw ? new Date(a.updated_at_raw).getTime() : (a.updated_at ? new Date(a.updated_at).getTime() : a.id);
-                    const timeB = b.updated_at_raw ? new Date(b.updated_at_raw).getTime() : (b.updated_at ? new Date(b.updated_at).getTime() : b.id);
-                    return timeB - timeA;
-                }
-                if (sortBy === 'UPDATED_ASC') {
-                    const timeA = a.updated_at_raw ? new Date(a.updated_at_raw).getTime() : (a.updated_at ? new Date(a.updated_at).getTime() : a.id);
-                    const timeB = b.updated_at_raw ? new Date(b.updated_at_raw).getTime() : (b.updated_at ? new Date(b.updated_at).getTime() : b.id);
-                    return timeA - timeB;
-                }
-                if (sortBy === 'TARGET_DESC') {
-                    return b.target_total - a.target_total;
-                }
-                if (sortBy === 'TARGET_ASC') {
-                    return a.target_total - b.target_total;
-                }
-                if (sortBy === 'ACTUAL_DESC') {
-                    return (b.actual_live || 0) - (a.actual_live || 0);
-                }
-                if (sortBy === 'NAME_ASC') {
-                    return a.province_name.localeCompare(b.province_name);
-                }
-                return 0;
-            });
-    }, [targets, selectedProvince, statusFilter, searchQuery, sortBy]);
-
-    // Pagination states
-    const [targetPage, setTargetPage] = useState(1);
-    const [targetPerPage, setTargetPerPage] = useState(10);
-
-    // Reset pagination when search query or filters change
-    useEffect(() => {
-        setTargetPage(1);
-    }, [searchQuery, selectedProvince, statusFilter, sortBy]);
-
-    // Paginated Targets
-    const paginatedTargets = useMemo<PaginatedData<ProvinceTargetItem>>(() => {
-        const total = filteredTargets.length;
-        const lastPage = Math.max(1, Math.ceil(total / targetPerPage));
-        const currentPage = Math.min(Math.max(1, targetPage), lastPage);
-        const from = total > 0 ? (currentPage - 1) * targetPerPage + 1 : null;
-        const to = total > 0 ? Math.min(currentPage * targetPerPage, total) : null;
-        const sliceData = total > 0 ? filteredTargets.slice((currentPage - 1) * targetPerPage, currentPage * targetPerPage) : [];
-
-        const links: PaginationLink[] = [
-            {
-                url: currentPage > 1 ? `#page=${currentPage - 1}` : null,
-                label: '&laquo; Previous',
-                active: false,
-            },
-        ];
-
-        for (let p = 1; p <= lastPage; p++) {
-            links.push({
-                url: `#page=${p}`,
-                label: `${p}`,
-                active: p === currentPage,
-            });
-        }
-
-        links.push({
-            url: currentPage < lastPage ? `#page=${currentPage + 1}` : null,
-            label: 'Next &raquo;',
-            active: false,
-        });
-
-        return {
-            data: sliceData,
-            current_page: currentPage,
-            last_page: lastPage,
-            from,
-            to,
-            per_page: targetPerPage,
-            total,
-            links,
-            prev_page_url: currentPage > 1 ? `#page=${currentPage - 1}` : null,
-            next_page_url: currentPage < lastPage ? `#page=${currentPage + 1}` : null,
-        };
-    }, [filteredTargets, targetPage, targetPerPage]);
 
     // Form for editing target
     const { 
@@ -318,9 +316,14 @@ export default function TargetsIndex({
         notes: '',
     });
 
-    // Options for Province Select2 in Create Modal
+    // Options for Province Select2 in Create Modal (tied to selected year from server dataset)
     const provinceOptions = useMemo<Select2Option<string>[]>(() => {
-        const existingNames = new Set(targets.map(t => t.province_name.toLowerCase()));
+        const pool = existingTargetsInYear.length > 0 ? existingTargetsInYear : paginatedData.data;
+        const existingNames = new Set(
+            pool
+                .filter(t => t.year === Number(createData.year))
+                .map(t => t.province_name.toLowerCase())
+        );
 
         return INDONESIA_REGIONS.map((item) => {
             const isExisting = existingNames.has(item.name.toLowerCase());
@@ -332,17 +335,54 @@ export default function TargetsIndex({
                 badgeColor: isExisting ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : undefined,
             };
         }).sort((a, b) => a.label.localeCompare('id'));
-    }, [targets]);
+    }, [existingTargetsInYear, paginatedData.data, createData.year]);
 
-    // Handle province change with automatic region mapping
+    // Check if the currently selected province already has a record in the chosen year
+    const existingProvinceTarget = useMemo(() => {
+        if (!createData.province_name) return null;
+        const pool = existingTargetsInYear.length > 0 ? existingTargetsInYear : paginatedData.data;
+        return pool.find(t => 
+            t.province_name.toLowerCase() === createData.province_name.toLowerCase() &&
+            t.year === Number(createData.year)
+        ) || null;
+    }, [existingTargetsInYear, paginatedData.data, createData.province_name, createData.year]);
+
+    // Handle province change with automatic region mapping & smart auto-fill
     const handleProvinceSelect = (provName: string) => {
         const autoRegion = PROVINCE_TO_REGION[provName] || 'Jawa';
+        const pool = existingTargetsInYear.length > 0 ? existingTargetsInYear : paginatedData.data;
+        const existing = pool.find(t => 
+            t.province_name.toLowerCase() === provName.toLowerCase() &&
+            t.year === Number(createData.year)
+        );
+
         setCreateData((prev) => ({
             ...prev,
             province_name: provName,
             region: autoRegion,
+            target_evcs: existing ? existing.target_evcs : 10,
+            target_bss: existing ? existing.target_bss : 5,
+            notes: existing ? (existing.notes || '') : '',
         }));
         setCreateValidationError('');
+    };
+
+    // Handle year change in Create Modal
+    const handleYearChange = (newYear: number) => {
+        const pool = existingTargetsInYear.length > 0 ? existingTargetsInYear : paginatedData.data;
+        const existing = pool.find(t => 
+            createData.province_name &&
+            t.province_name.toLowerCase() === createData.province_name.toLowerCase() &&
+            t.year === newYear
+        );
+
+        setCreateData((prev) => ({
+            ...prev,
+            year: newYear,
+            target_evcs: existing ? existing.target_evcs : 10,
+            target_bss: existing ? existing.target_bss : 5,
+            notes: existing ? (existing.notes || '') : '',
+        }));
     };
 
     const handleOpenEdit = (target: ProvinceTargetItem) => {
@@ -406,7 +446,19 @@ export default function TargetsIndex({
                         </h1>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                        {/* Selector Tahun Rencana di Header menggunakan Select2 */}
+                        <Select2<number>
+                            value={summary.selected_year}
+                            onChange={(val) => applyFilters({ year: Number(val), page: 1 })}
+                            options={yearFilterOptions}
+                            placeholder="Pilih Tahun"
+                            prefixIcon={Calendar}
+                            variant="pill"
+                            size="sm"
+                            isSearchable={false}
+                        />
+
                         {/* User Profile */}
                         <UserDropdown
                             user={user}
@@ -422,15 +474,9 @@ export default function TargetsIndex({
                         {/* CARD 1: Total Target Nasional */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-400 tracking-normal">
-                                        Total Target Nasional
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100/60">
-                                        <TrendingUp className="w-3 h-3 text-blue-600" />
-                                        <span>Target V-Green</span>
-                                    </span>
-                                </div>
+                                <span className="text-xs font-semibold text-slate-400 tracking-normal">
+                                    Total Target Nasional
+                                </span>
                                 <div className="mt-2">
                                     <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                                         {summary.total_target_national.toLocaleString('id-ID')} Titik
@@ -457,15 +503,9 @@ export default function TargetsIndex({
                         {/* CARD 2: Target EVCS Mobil Listrik */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-400 tracking-normal">
-                                        Target EVCS Mobil Listrik
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100/60">
-                                        <Car className="w-3 h-3 text-blue-600" />
-                                        <span>Charging Station</span>
-                                    </span>
-                                </div>
+                                <span className="text-xs font-semibold text-slate-400 tracking-normal">
+                                    Target EVCS Mobil Listrik
+                                </span>
                                 <div className="mt-2">
                                     <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                                         {summary.total_target_evcs.toLocaleString('id-ID')} Titik
@@ -492,15 +532,9 @@ export default function TargetsIndex({
                         {/* CARD 3: Target BSS Motor Listrik */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-400 tracking-normal">
-                                        Target BSS Motor Listrik
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-100/60">
-                                        <BatteryCharging className="w-3 h-3 text-amber-600" />
-                                        <span>Swap Station</span>
-                                    </span>
-                                </div>
+                                <span className="text-xs font-semibold text-slate-400 tracking-normal">
+                                    Target BSS Motor Listrik
+                                </span>
                                 <div className="mt-2">
                                     <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                                         {summary.total_target_bss.toLocaleString('id-ID')} Titik
@@ -527,15 +561,9 @@ export default function TargetsIndex({
                         {/* CARD 4: Sebaran Provinsi */}
                         <div className="bg-white rounded-3xl p-6 border border-[#EDF1F7] shadow-card flex flex-col justify-between">
                             <div>
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs font-semibold text-slate-400 tracking-normal">
-                                        Cakupan Provinsi
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-100/60">
-                                        <MapPin className="w-3 h-3 text-purple-600" />
-                                        <span>Available</span>
-                                    </span>
-                                </div>
+                                <span className="text-xs font-semibold text-slate-400 tracking-normal">
+                                    Cakupan Provinsi
+                                </span>
                                 <div className="mt-2">
                                     <span className="text-3xl font-extrabold text-slate-900 tracking-tight">
                                         {summary.total_provinces} Provinsi
@@ -544,7 +572,7 @@ export default function TargetsIndex({
                             </div>
 
                             <div className="pt-5 flex items-center justify-between text-xs font-semibold">
-                                <span className="text-slate-500">Dalam Pembangunan</span>
+                                <span className="text-slate-500">In Progress</span>
                                 <span className="font-bold text-slate-800">{summary.total_in_construction} Titik</span>
                             </div>
                         </div>
@@ -559,7 +587,7 @@ export default function TargetsIndex({
                                     Daftar Kuota Target per Provinsi (Tahun {summary.selected_year})
                                 </h3>
                                 <p className="text-xs text-slate-400 mt-0.5">
-                                    Menampilkan {filteredTargets.length} dari total {targets.length} provinsi terdaftar
+                                    Menampilkan {paginatedData.total > 0 ? `${paginatedData.from ?? 1}–${paginatedData.to ?? paginatedData.data.length}` : '0'} dari total {paginatedData.total} provinsi terdaftar
                                 </p>
                             </div>
 
@@ -574,12 +602,20 @@ export default function TargetsIndex({
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    applyFilters({ search: searchQuery, page: 1 });
+                                                }
+                                            }}
                                             placeholder="Cari provinsi..."
                                             className="w-full bg-[#F4F5F8] hover:bg-[#ECEFF4] border border-slate-200/60 rounded-full pl-9 pr-7 py-2 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:bg-white transition"
                                         />
                                         {searchQuery && (
                                             <button
-                                                onClick={() => setSearchQuery('')}
+                                                onClick={() => {
+                                                    setSearchQuery('');
+                                                    applyFilters({ search: '', page: 1 });
+                                                }}
                                                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
                                             >
                                                 <X className="w-3 h-3" />
@@ -590,7 +626,11 @@ export default function TargetsIndex({
                                     {/* Select2 Province Filter */}
                                     <Select2
                                         value={selectedProvince}
-                                        onChange={(val) => setSelectedProvince(String(val))}
+                                        onChange={(val) => {
+                                            const nextVal = String(val);
+                                            setSelectedProvince(nextVal);
+                                            applyFilters({ province: nextVal, page: 1 });
+                                        }}
                                         options={provinceFilterOptions}
                                         placeholder="Semua Provinsi"
                                         searchPlaceholder="Pilih atau cari provinsi..."
@@ -601,21 +641,15 @@ export default function TargetsIndex({
                                     {/* Select2 Status Filter */}
                                     <Select2
                                         value={statusFilter}
-                                        onChange={(val) => setStatusFilter(String(val))}
+                                        onChange={(val) => {
+                                            const nextVal = String(val);
+                                            setStatusFilter(nextVal);
+                                            applyFilters({ status: nextVal, page: 1 });
+                                        }}
                                         options={statusOptions}
                                         placeholder="Kesiapan Operasional"
                                         searchPlaceholder="Filter status kesiapan..."
                                         prefixIcon={SlidersHorizontal}
-                                        variant="pill"
-                                    />
-
-                                    {/* Select2 Sorting */}
-                                    <Select2
-                                        value={sortBy}
-                                        onChange={(val) => setSortBy(String(val))}
-                                        options={sortOptions}
-                                        placeholder="Urutan Data"
-                                        prefixIcon={ArrowUpDown}
                                         variant="pill"
                                     />
 
@@ -638,6 +672,15 @@ export default function TargetsIndex({
                                         <button
                                             onClick={() => {
                                                 resetCreate();
+                                                setCreateData({
+                                                    province_name: '',
+                                                    region: 'Jawa',
+                                                    year: summary.selected_year || 2026,
+                                                    target_evcs: 10,
+                                                    target_bss: 5,
+                                                    notes: '',
+                                                });
+                                                setCreateValidationError('');
                                                 setIsCreateModalOpen(true);
                                             }}
                                             className="px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs shadow-blue-500/20 flex items-center gap-1.5 transition shrink-0 whitespace-nowrap"
@@ -655,28 +698,96 @@ export default function TargetsIndex({
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="border-b border-[#EDF1F7] bg-slate-50/60 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
-                                        <th className="py-4 px-6">Provinsi</th>
-                                        <th className="py-4 px-6 text-center">Target EVCS (Mobil)</th>
-                                        <th className="py-4 px-6 text-center">Target BSS (Motor)</th>
-                                        <th className="py-4 px-6 text-center">Total Target</th>
-                                        <th className="py-4 px-6 text-center">Realisasi Live</th>
-                                        <th className="py-4 px-6">Progres Capaian</th>
-                                        <th className="py-4 px-6">Catatan Operasional</th>
-                                        {isInternal && <th className="py-4 px-6 text-right">Aksi</th>}
+                                        <th className="py-4 px-6">
+                                            <SortableHeader 
+                                                field="NAME" 
+                                                currentSort={sortBy} 
+                                                onSort={handleSort} 
+                                                defaultDirection="asc"
+                                            >
+                                                Provinsi
+                                            </SortableHeader>
+                                        </th>
+                                        <th className="py-4 px-6 text-center">
+                                            <SortableHeader 
+                                                field="EVCS" 
+                                                currentSort={sortBy} 
+                                                onSort={handleSort} 
+                                                align="center" 
+                                                defaultDirection="desc"
+                                            >
+                                                Target EVCS (Mobil)
+                                            </SortableHeader>
+                                        </th>
+                                        <th className="py-4 px-6 text-center">
+                                            <SortableHeader 
+                                                field="BSS" 
+                                                currentSort={sortBy} 
+                                                onSort={handleSort} 
+                                                align="center" 
+                                                defaultDirection="desc"
+                                            >
+                                                Target BSS (Motor)
+                                            </SortableHeader>
+                                        </th>
+                                        <th className="py-4 px-6 text-center">
+                                            <SortableHeader 
+                                                field="TARGET" 
+                                                currentSort={sortBy} 
+                                                onSort={handleSort} 
+                                                align="center" 
+                                                defaultDirection="desc"
+                                            >
+                                                Total Target
+                                            </SortableHeader>
+                                        </th>
+                                        <th className="py-4 px-6 text-center">
+                                            <SortableHeader 
+                                                field="ACTUAL" 
+                                                currentSort={sortBy} 
+                                                onSort={handleSort} 
+                                                align="center" 
+                                                defaultDirection="desc"
+                                            >
+                                                Realisasi Live
+                                            </SortableHeader>
+                                        </th>
+                                        <th className="py-4 px-6">
+                                            <SortableHeader 
+                                                field="PROGRESS" 
+                                                currentSort={sortBy} 
+                                                onSort={handleSort} 
+                                                defaultDirection="desc"
+                                            >
+                                                Progres Capaian
+                                            </SortableHeader>
+                                        </th>
+                                        <th className="py-4 px-6 hidden 3xl:table-cell">
+                                            <SortableHeader 
+                                                field="UPDATED" 
+                                                currentSort={sortBy} 
+                                                onSort={handleSort} 
+                                                defaultDirection="desc" 
+                                                title="Urutkan berdasarkan waktu pembaruan terakhir"
+                                            >
+                                                Catatan Operasional
+                                            </SortableHeader>
+                                        </th>
+                                        {isInternal && <th className="py-4 px-6 text-right font-bold uppercase tracking-wider text-[11px] text-slate-400">Aksi</th>}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-[#EDF1F7]">
-                                    {paginatedTargets.data.length === 0 ? (
+                                    {paginatedData.data.length === 0 ? (
                                         <tr>
                                             <td colSpan={isInternal ? 8 : 7} className="py-12 text-center text-slate-400 text-xs">
                                                 Tidak ada target provinsi yang cocok dengan filter pencarian.
                                             </td>
                                         </tr>
                                     ) : (
-                                        paginatedTargets.data.map((item) => (
+                                        paginatedData.data.map((item) => (
                                             <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
                                                 {/* Provinsi */}
-                                                <td className="py-4 px-6">
+                                                <td className="py-4 px-6 whitespace-nowrap">
                                                     <div className="flex items-center gap-2.5">
                                                         <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
                                                             {item.province_name.substring(0, 2).toUpperCase()}
@@ -692,7 +803,7 @@ export default function TargetsIndex({
                                                                 ) : (item.in_construction || 0) > 0 ? (
                                                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/60">
                                                                         <Hammer className="w-2.5 h-2.5 text-amber-600" />
-                                                                        <span>Dalam Pembangunan</span>
+                                                                        <span>In Progress</span>
                                                                     </span>
                                                                 ) : (
                                                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200/60">
@@ -731,26 +842,28 @@ export default function TargetsIndex({
                                                     </span>
                                                 </td>
 
-                                                {/* Realisasi Live */}
-                                                <td className="py-4 px-6 text-center">
-                                                    {(item.actual_live || 0) > 0 ? (
-                                                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-100/60">
-                                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                                                            <span>{item.actual_live} Live</span>
-                                                        </div>
-                                                    ) : (item.in_construction || 0) > 0 ? (
-                                                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold text-xs border border-amber-100/60">
-                                                            <Hammer className="w-3 h-3 text-amber-600" />
-                                                            <span>{item.in_construction} Dalam Pembangunan</span>
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-slate-400 text-xs font-semibold">0 Live</span>
-                                                    )}
-                                                    {(item.actual_live || 0) > 0 && (item.in_construction ?? 0) > 0 && (
-                                                        <div className="text-[10px] text-blue-600 font-medium mt-1">
-                                                            +{item.in_construction} Dalam Pembangunan
-                                                        </div>
-                                                    )}
+                                                {/* Realisasi Live (Pills sejajar satu baris agar tinggi baris seragam) */}
+                                                <td className="py-4 px-6 text-center whitespace-nowrap">
+                                                    <div className="inline-flex items-center justify-center gap-1.5">
+                                                        {(item.actual_live || 0) > 0 ? (
+                                                            <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-xs border border-emerald-100/60">
+                                                                {item.actual_live} Live
+                                                            </span>
+                                                        ) : (item.in_construction || 0) === 0 ? (
+                                                            <span className="px-2.5 py-1 rounded-full bg-slate-50 text-slate-400 font-semibold text-xs border border-slate-100">
+                                                                0 Live
+                                                            </span>
+                                                        ) : null}
+
+                                                        {(item.in_construction || 0) > 0 && (
+                                                            <span 
+                                                                className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-bold text-xs border border-amber-100/60"
+                                                                title={`${item.in_construction} stasiun in progress`}
+                                                            >
+                                                                {(item.actual_live || 0) > 0 ? `+${item.in_construction}` : item.in_construction} In Progress
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
 
                                                 {/* Progres Capaian */}
@@ -767,8 +880,8 @@ export default function TargetsIndex({
                                                     </div>
                                                 </td>
 
-                                                {/* Catatan Operasional */}
-                                                <td className="py-4 px-6 text-xs text-slate-500 max-w-xs">
+                                                {/* Catatan Operasional (Otomatis disembunyikan di layar laptop, desktop Full HD & layar tanggung / < 3xl / < 2000px) */}
+                                                <td className="py-4 px-6 text-xs text-slate-500 max-w-xs hidden 3xl:table-cell">
                                                     <div className="truncate font-medium text-slate-700" title={item.notes || ''}>
                                                         {item.notes || '-'}
                                                     </div>
@@ -798,14 +911,11 @@ export default function TargetsIndex({
                             </table>
                         </div>
 
-                        {/* Pagination for Targets */}
+                        {/* Pagination for Targets (Server-Side) */}
                         <Pagination
-                            data={paginatedTargets}
-                            onPageChange={(page) => setTargetPage(page)}
-                            onPerPageChange={(newPerPage) => {
-                                setTargetPerPage(newPerPage);
-                                setTargetPage(1);
-                            }}
+                            data={paginatedData}
+                            preserveScroll={true}
+                            preserveState={true}
                         />
                     </div>
                 </div>
@@ -813,7 +923,7 @@ export default function TargetsIndex({
                 {/* MODAL EDIT TARGET PROVINSI */}
                 {editingTarget && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
-                        <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5">
+                        <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5">
                             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                 <div>
                                     <h3 className="text-base font-bold text-slate-900">Ubah Target Kuota Provinsi</h3>
@@ -904,7 +1014,7 @@ export default function TargetsIndex({
                 {/* MODAL TAMBAH PROVINSI BARU */}
                 {isCreateModalOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
-                        <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-5">
+                        <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5">
                             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                 <div>
                                     <h3 className="text-base font-bold text-slate-900">Tambah Target Provinsi Baru</h3>
@@ -924,7 +1034,26 @@ export default function TargetsIndex({
                             </div>
 
                             <form onSubmit={handleSaveCreate} className="space-y-4">
-                                {/* Nama Provinsi (Select2 dengan Korelasi Kota) */}
+                                {/* Pilihan Tahun Target di Bagian Paling Atas (Select2) */}
+                                <div className="relative z-40">
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        Tahun Target
+                                    </label>
+                                    <Select2<number>
+                                        value={createData.year}
+                                        onChange={(val) => handleYearChange(Number(val))}
+                                        options={yearFormOptions}
+                                        placeholder="Pilih Tahun Target..."
+                                        variant="default"
+                                        size="md"
+                                        className="w-full"
+                                        dropdownClassName="shadow-xl border-slate-200"
+                                        prefixIcon={Calendar}
+                                        isSearchable={false}
+                                    />
+                                </div>
+
+                                {/* Nama Provinsi (Select2 dengan Korelasi Kota & Auto-Fill) */}
                                 <div className="relative z-30">
                                     <label className="block text-xs font-bold text-slate-700 mb-1">
                                         Nama Provinsi
@@ -938,7 +1067,7 @@ export default function TargetsIndex({
                                         variant="default"
                                         size="md"
                                         className="w-full"
-                                        dropdownClassName="!w-full !max-w-none shadow-xl border-slate-200"
+                                        dropdownClassName="shadow-xl border-slate-200"
                                         prefixIcon={MapPin}
                                     />
                                     {(createErrors.province_name || createValidationError) && (
@@ -946,6 +1075,19 @@ export default function TargetsIndex({
                                             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                                             <span>{createErrors.province_name || createValidationError}</span>
                                         </p>
+                                    )}
+
+                                    {/* Indikator Auto-Fill jika sudah terdaftar di tahun yang dipilih */}
+                                    {existingProvinceTarget && (
+                                        <div className="mt-2.5 p-3 bg-emerald-50/90 border border-emerald-200/80 rounded-2xl flex items-start gap-2.5 text-xs text-emerald-800 animate-in fade-in duration-200">
+                                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                                            <div className="min-w-0">
+                                                <span className="font-bold">Provinsi ini sudah terdaftar di tahun {createData.year}.</span>
+                                                <p className="text-[11px] text-emerald-700 mt-0.5 leading-snug">
+                                                    Data target untuk provinsi ini sudah ada, masukkan angka baru dan simpan untuk perbarui targetnya.
+                                                </p>
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
 
@@ -1007,7 +1149,12 @@ export default function TargetsIndex({
                                         disabled={createProcessing}
                                         className="px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-2xs transition disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                                     >
-                                        {createProcessing ? 'Menyimpan...' : 'Simpan Target'}
+                                        {createProcessing 
+                                            ? 'Menyimpan...' 
+                                            : existingProvinceTarget 
+                                            ? 'Perbarui Target' 
+                                            : 'Simpan Target'
+                                        }
                                     </button>
                                 </div>
                             </form>

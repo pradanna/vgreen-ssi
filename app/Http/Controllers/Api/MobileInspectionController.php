@@ -158,6 +158,19 @@ class MobileInspectionController extends Controller
             'photos.*.latitude' => 'nullable|numeric|between:-12.0,7.0',
             'photos.*.longitude' => 'nullable|numeric|between:94.0,142.0',
             'photos.*.taken_at' => 'nullable|date',
+        ], [
+            'stage.required' => 'Tahapan inspeksi wajib dipilih (INITIAL_SURVEY, CONSTRUCTION_PROGRESS, COMMISSIONING, atau ROUTINE_PERIODIC).',
+            'stage.in' => 'Tahapan inspeksi yang dipilih tidak valid. Pilihan yang tersedia: INITIAL_SURVEY, CONSTRUCTION_PROGRESS, COMMISSIONING, ROUTINE_PERIODIC.',
+            'overall_condition.in' => 'Status kondisi fisik tidak valid. Pilihan yang tersedia: BAIK, CUKUP, RUSAK_RINGAN, RUSAK_BERAT.',
+            'physical_condition.max' => 'Deskripsi kondisi fisik lahan maksimal 2000 karakter.',
+            'electrical_condition.max' => 'Deskripsi kondisi kelistrikan maksimal 2000 karakter.',
+            'latitude.between' => 'Titik koordinat Latitude perangkat berada di luar wilayah Indonesia (-12.0 s/d 7.0).',
+            'longitude.between' => 'Titik koordinat Longitude perangkat berada di luar wilayah Indonesia (94.0 s/d 142.0).',
+            'photos.*.slot_id.required_with' => 'ID slot sudut foto wajib disertakan.',
+            'photos.*.latitude.between' => 'Titik koordinat Latitude foto berada di luar wilayah Indonesia (-12.0 s/d 7.0).',
+            'photos.*.longitude.between' => 'Titik koordinat Longitude foto berada di luar wilayah Indonesia (94.0 s/d 142.0).',
+            'photos.*.taken_at.date' => 'Format tanggal dan waktu pengambilan foto tidak valid.',
+            'notes.max' => 'Catatan lapangan maksimal 2000 karakter.',
         ]);
 
         $photosData = $this->extractPhotosFromRequest($request, $station);
@@ -323,9 +336,18 @@ class MobileInspectionController extends Controller
         if (!in_array($user->role_id, ['DIRECTOR_SSI', 'ADMIN_SSI']) && $report->submitted_by !== $user->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Anda tidak memiliki hak untuk merevisi laporan ini.',
+                'message' => 'Anda tidak memiliki hak akses untuk merevisi laporan ini.',
                 'data' => null,
             ], 403);
+        }
+
+        // Verify report is in revisable status
+        if ($report->approval_status_id === ApprovalStatus::APPROVED) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Laporan inspeksi ini sudah disetujui (APPROVED) dan tidak dapat direvisi kembali.',
+                'data' => null,
+            ], 400);
         }
 
         $request->validate([
@@ -340,6 +362,14 @@ class MobileInspectionController extends Controller
             'notes' => 'nullable|string|max:2000',
             'photos' => 'nullable|array',
             'photos.*.slot_id' => 'required_with:photos|string',
+        ], [
+            'stage.in' => 'Tahapan inspeksi yang dipilih tidak valid. Pilihan yang tersedia: INITIAL_SURVEY, CONSTRUCTION_PROGRESS, COMMISSIONING, ROUTINE_PERIODIC.',
+            'overall_condition.in' => 'Status kondisi fisik tidak valid. Pilihan yang tersedia: BAIK, CUKUP, RUSAK_RINGAN, RUSAK_BERAT.',
+            'physical_condition.max' => 'Deskripsi kondisi fisik lahan maksimal 2000 karakter.',
+            'electrical_condition.max' => 'Deskripsi kondisi kelistrikan maksimal 2000 karakter.',
+            'latitude.between' => 'Titik koordinat Latitude perangkat berada di luar wilayah Indonesia (-12.0 s/d 7.0).',
+            'longitude.between' => 'Titik koordinat Longitude perangkat berada di luar wilayah Indonesia (94.0 s/d 142.0).',
+            'notes.max' => 'Catatan revisi maksimal 2000 karakter.',
         ]);
 
         $station = $report->station;
@@ -375,7 +405,7 @@ class MobileInspectionController extends Controller
      */
     public function checklistSlots(): JsonResponse
     {
-        $slots = ChecklistSlot::orderBy('category')->orderBy('order_index')->get();
+        $slots = ChecklistSlot::orderBy('category')->orderBy('id')->get();
 
         return response()->json([
             'success' => true,
@@ -397,6 +427,14 @@ class MobileInspectionController extends Controller
         // 1. Multipart files keyed by photo_{slot_id}
         foreach ($allSlots as $slotId) {
             if ($request->hasFile("photo_{$slotId}")) {
+                $request->validate([
+                    "photo_{$slotId}" => 'file|image|mimes:jpeg,png,jpg,webp|max:10240',
+                ], [
+                    "photo_{$slotId}.image" => "Berkas foto untuk sudut {$slotId} harus berupa gambar.",
+                    "photo_{$slotId}.mimes" => "Berkas foto untuk sudut {$slotId} harus berformat JPG, JPEG, PNG, atau WEBP.",
+                    "photo_{$slotId}.max" => "Ukuran berkas foto sudut {$slotId} maksimal adalah 10MB.",
+                ]);
+
                 $file = $request->file("photo_{$slotId}");
                 $photosData[] = [
                     'checklist_slot_id' => $slotId,
@@ -410,6 +448,14 @@ class MobileInspectionController extends Controller
 
         // 2. Structured array of photos payload
         if ($request->has('photos') && is_array($request->photos)) {
+            $request->validate([
+                'photos.*.file' => 'nullable|file|image|mimes:jpeg,png,jpg,webp|max:10240',
+            ], [
+                'photos.*.file.image' => 'Berkas foto yang diunggah harus berupa gambar.',
+                'photos.*.file.mimes' => 'Format berkas foto harus berformat JPG, JPEG, PNG, atau WEBP.',
+                'photos.*.file.max' => 'Ukuran berkas foto maksimal adalah 10MB.',
+            ]);
+
             foreach ($request->photos as $idx => $photoItem) {
                 $file = $request->file("photos.{$idx}.file") ?? ($photoItem['file'] ?? null);
                 $photosData[] = [

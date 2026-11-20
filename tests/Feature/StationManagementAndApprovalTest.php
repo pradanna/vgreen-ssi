@@ -37,7 +37,7 @@ class StationManagementAndApprovalTest extends TestCase
     /**
      * Milestone 2 & 4: Dashboard returns role-projected stations.
      */
-    public function test_vgreen_user_only_sees_operational_and_approved_stations(): void
+    public function test_vgreen_user_can_view_all_stations_with_masked_landlord(): void
     {
         $response = $this->actingAs($this->vgreen)->get(route('stations.index'));
 
@@ -45,7 +45,19 @@ class StationManagementAndApprovalTest extends TestCase
         $response->assertInertia(fn ($page) => 
             $page->component('Dashboard')
                 ->has('stations.data')
-                ->where('stations.data.0.status_id', StationStatus::OPERATIONAL)
+                ->where('stations.data.0.contract_vgreen_doc_number', fn($val) => !empty($val))
+        );
+
+        $gisResponse = $this->actingAs($this->vgreen)->get(route('gis.index'));
+        $gisResponse->assertOk();
+        $gisResponse->assertInertia(fn ($page) =>
+            $page->component('Gis/Index')
+                ->has('stations')
+                ->where('stations', function ($stations) {
+                    $statuses = collect($stations)->pluck('status_id')->unique()->all();
+                    return in_array(StationStatus::OPERATIONAL, $statuses)
+                        && in_array(StationStatus::CONSTRUCTION, $statuses);
+                })
         );
     }
 
@@ -628,6 +640,41 @@ class StationManagementAndApprovalTest extends TestCase
             'name' => 'Alfamart Patimura Solo',
             'lat' => -7.5862429,
             'lon' => 110.8157058,
+        ]);
+    }
+
+    /**
+     * Geolocation & Reverse Geocoding: Verify /geo/reverse endpoint returns address, city, province, and postcode.
+     */
+    public function test_geo_reverse_endpoint_returns_address_details(): void
+    {
+        \Illuminate\Support\Facades\Cache::flush();
+        \Illuminate\Support\Facades\Http::fake([
+            'nominatim.openstreetmap.org/reverse*' => \Illuminate\Support\Facades\Http::response([
+                'display_name' => 'Jalan Kapten Pattimura, Serengan, Surakarta, Kecamatan Serengan, Jawa Tengah, 57156, Indonesia',
+                'address' => [
+                    'road' => 'Jalan Kapten Pattimura',
+                    'village' => 'Serengan',
+                    'city' => 'Surakarta',
+                    'municipality' => 'Kecamatan Serengan',
+                    'state' => 'Jawa Tengah',
+                    'postcode' => '57156',
+                    'country' => 'Indonesia',
+                ],
+            ], 200),
+        ]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('geo.reverse', [
+            'lat' => -7.5864254,
+            'lon' => 110.8158706,
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonFragment([
+            'road' => 'Jalan Kapten Pattimura',
+            'city' => 'Surakarta',
+            'province' => 'Jawa Tengah',
+            'postal_code' => '57156',
         ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Domain\Station\Actions\CreateStationAction;
 use App\Domain\Station\Actions\ExportStationsAction;
 use App\Domain\Station\Actions\ImportStationsAction;
@@ -132,7 +133,7 @@ class StationManagementController extends Controller
 
             // Nested machines
             'machines' => 'nullable|array',
-            'machines.*.id' => 'nullable|integer',
+            'machines.*.id' => 'nullable|string',
             'machines.*.machine_id' => 'nullable|exists:m_machines,id',
             'machines.*.name' => 'required_with:machines|string|max:150',
             'machines.*.brand' => 'nullable|string|max:100',
@@ -158,7 +159,23 @@ class StationManagementController extends Controller
         $this->ensureAuthorized($request);
 
         $code = $station->code;
+        $name = $station->name;
+        $snapshot = [
+            'code' => $station->code,
+            'name' => $station->name,
+            'city' => $station->city,
+            'province' => $station->province,
+        ];
         $station->delete();
+
+        ActivityLogger::log(
+            module: 'STATION',
+            action: 'STATION_DELETED',
+            description: "Menghapus stasiun {$code} - {$name}",
+            subject: null,
+            properties: $snapshot,
+            subjectNameOverride: "{$code} - {$name}"
+        );
 
         return redirect()->back()->with('success', "Titik stasiun {$code} berhasil dihapus.");
     }
@@ -191,7 +208,7 @@ class StationManagementController extends Controller
             $filePath = $file->store("documents/stations/{$station->code}", 'public');
         }
 
-        StationDocument::create([
+        $doc = StationDocument::create([
             'station_id' => $station->id,
             'category' => $validated['category'],
             'document_type' => $validated['document_type'],
@@ -206,6 +223,21 @@ class StationManagementController extends Controller
 
         // Sync compliance status
         $station->update(['document_status' => $station->document_compliance['status']]);
+
+        ActivityLogger::log(
+            module: 'DOCUMENT',
+            action: 'DOCUMENT_UPLOADED',
+            description: "Mengunggah dokumen {$validated['title']} ({$validated['document_type']}) untuk stasiun {$station->code}",
+            subject: $station,
+            properties: [
+                'document_id' => $doc->id,
+                'category' => $validated['category'],
+                'document_type' => $validated['document_type'],
+                'title' => $validated['title'],
+                'file_name' => $fileName,
+                'file_size' => $fileSize,
+            ]
+        );
 
         return redirect()->back()->with('success', 'Dokumen ' . $validated['title'] . ' berhasil diunggah.');
     }
@@ -222,10 +254,22 @@ class StationManagementController extends Controller
         }
 
         $title = $document->title;
+        $docType = $document->document_type;
         $document->delete();
 
         // Sync compliance status
         $station->update(['document_status' => $station->document_compliance['status']]);
+
+        ActivityLogger::log(
+            module: 'DOCUMENT',
+            action: 'DOCUMENT_DELETED',
+            description: "Menghapus dokumen {$title} ({$docType}) pada stasiun {$station->code}",
+            subject: $station,
+            properties: [
+                'document_type' => $docType,
+                'title' => $title,
+            ]
+        );
 
         return redirect()->back()->with('success', "Dokumen {$title} berhasil dihapus.");
     }

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Station\Actions;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Domain\GIS\GeoCoordinate;
 use App\Models\FacilityType;
 use App\Models\Station;
@@ -128,6 +129,26 @@ class CreateStationAction
         // Sync compliance status
         $compliance = $station->document_compliance;
         $station->update(['document_status' => $compliance['status']]);
+
+        // Audit Activity Log
+        ActivityLogger::log(
+            module: 'STATION',
+            action: 'STATION_CREATED',
+            description: "Menambahkan stasiun baru {$station->code} - {$station->name} di {$station->city}, {$station->province}",
+            subject: $station,
+            properties: [
+                'code' => $station->code,
+                'name' => $station->name,
+                'facility_type_id' => $station->facility_type_id,
+                'status_id' => $station->status_id,
+                'city' => $station->city,
+                'province' => $station->province,
+                'power_capacity_kw' => $station->power_capacity_kw,
+                'slot_count' => $station->slot_count,
+                'latitude' => $station->latitude,
+                'longitude' => $station->longitude,
+            ]
+        );
 
         return $station;
     }

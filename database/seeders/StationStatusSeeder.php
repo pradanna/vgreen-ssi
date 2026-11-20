@@ -18,7 +18,7 @@ class StationStatusSeeder extends Seeder
             ],
             [
                 'id' => StationStatus::CONSTRUCTION,
-                'name' => 'Dalam Pembangunan',
+                'name' => 'In Progress',
                 'color_code' => '#F97316', // Orange
                 'step_order' => 3,
             ],

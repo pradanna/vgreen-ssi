@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class ProvinceTarget extends Model
 {
+    use HasUuids;
     protected $fillable = [
         'province_name',
         'region',

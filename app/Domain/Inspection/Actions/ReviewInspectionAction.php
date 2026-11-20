@@ -2,6 +2,7 @@
 
 namespace App\Domain\Inspection\Actions;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Models\ApprovalStatus;
 use App\Models\InspectionReport;
 use App\Models\Station;
@@ -50,6 +51,23 @@ class ReviewInspectionAction
                 'status_id' => StationStatus::ON_HOLD,
             ]);
         }
+
+        ActivityLogger::log(
+            module: 'INSPECTION',
+            action: 'INSPECTION_REVIEWED',
+            description: $verdict === 'APPROVE'
+                ? "Menyetujui (Approve) laporan inspeksi stasiun {$station->code} - {$station->name}"
+                : "Menolak & meminta revisi laporan inspeksi stasiun {$station->code} - {$station->name}",
+            subject: $station,
+            properties: [
+                'report_id' => $report->id,
+                'verdict' => $verdict,
+                'approval_status_id' => $report->approval_status_id,
+                'notes' => $notes,
+                'new_station_status_id' => $station->status_id,
+            ],
+            user: $reviewer
+        );
 
         return $report->fresh(['approvalStatus', 'reviewer', 'photos']);
     }

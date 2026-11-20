@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 class InspectionReport extends Model
 {
+    use HasUuids;
     protected $fillable = [
         'station_id',
         'submitted_by',

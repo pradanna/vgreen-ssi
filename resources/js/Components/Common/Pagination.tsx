@@ -112,7 +112,7 @@ export default function Pagination({
                         <select
                             value={data.per_page}
                             onChange={handlePerPageSelect}
-                            className="h-8 px-2.5 text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
+                            className="h-8 pl-3 pr-8 py-1 min-w-[64px] text-xs font-semibold bg-white border border-slate-200/90 rounded-lg text-slate-800 focus:outline-hidden focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition shadow-2xs cursor-pointer"
                             title="Jumlah baris per halaman"
                         >
                             {perPageOptions.map((opt) => (

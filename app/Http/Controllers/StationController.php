@@ -187,12 +187,6 @@ class StationController extends Controller
 
         // Base query for role scoping
         $baseQuery = Station::query();
-        if ($isVGreen) {
-            $baseQuery->where('status_id', StationStatus::OPERATIONAL)
-                ->whereHas('latestInspection', function ($q) {
-                    $q->where('approval_status_id', ApprovalStatus::APPROVED);
-                });
-        }
 
         // Aggregate statistics using fast SQL queries (Nationwide overview for both Director & V-Green)
         $counts = Station::query()->selectRaw("
@@ -217,7 +211,9 @@ class StationController extends Controller
         $totalExpiringContracts = 0;
         $provinceTargets = collect();
         $monthlyRolloutData = [];
-        $nationalTargetSum = 2095;
+        $nationalTargetSum = 2120;
+        $nationalTargetEvcs = 1679;
+        $nationalTargetBss = 441;
 
         // Dashboard specific analytics (Skipped for GIS map for sub-second performance)
         if ($activeNav !== 'gis') {
@@ -270,7 +266,9 @@ class StationController extends Controller
             });
 
             $nationalTargetSum = (int) $rawTargets->sum(fn($t) => $t->target_total);
-            $annualNationalTarget = $nationalTargetSum > 0 ? $nationalTargetSum : 2095;
+            $nationalTargetEvcs = (int) $rawTargets->sum('target_evcs');
+            $nationalTargetBss = (int) $rawTargets->sum('target_bss');
+            $annualNationalTarget = $nationalTargetSum > 0 ? $nationalTargetSum : 2120;
 
             // 1 fast query for monthly actual operational stations (cross-driver compatible with SQLite & MySQL)
             $isSqlite = DB::connection()->getDriverName() === 'sqlite';
@@ -348,7 +346,9 @@ class StationController extends Controller
         // Stats Summary
         $stats = [
             'total' => (int) ($counts->total ?? 0),
-            'national_target' => $nationalTargetSum > 0 ? $nationalTargetSum : 2095,
+            'national_target' => $nationalTargetSum > 0 ? $nationalTargetSum : 2120,
+            'national_target_evcs' => $nationalTargetEvcs > 0 ? $nationalTargetEvcs : 1679,
+            'national_target_bss' => $nationalTargetBss > 0 ? $nationalTargetBss : 441,
             'operational' => (int) ($counts->operational ?? 0),
             'construction' => (int) ($counts->construction ?? 0),
             'construction_evcs' => (int) ($counts->construction_evcs ?? 0),
@@ -402,6 +402,21 @@ class StationController extends Controller
             // Status filter
             if ($request->filled('status') && $request->status !== 'ALL') {
                 $stationQuery->where('status_id', $request->status);
+            }
+
+            // Province filter
+            if ($request->filled('province') && $request->province !== 'ALL') {
+                $stationQuery->where('province', $request->province);
+            }
+
+            // City filter
+            if ($request->filled('city') && $request->city !== 'ALL') {
+                $stationQuery->where('city', $request->city);
+            }
+
+            // Specific Station filter
+            if ($request->filled('station_id') && $request->station_id !== 'ALL') {
+                $stationQuery->where('id', $request->station_id);
             }
 
             // Landlord Type filter
@@ -495,8 +510,36 @@ class StationController extends Controller
 
         $viewName = $activeNav === 'gis' ? 'Gis/Index' : 'Dashboard';
 
+        // Ultra-lightweight station lookup list for filter drawers and cascading selectors (1 fast query, zero relations)
+        $stationFilterLookups = Station::query()
+            ->select([
+                'id',
+                'code',
+                'name',
+                'province',
+                'city',
+                'facility_type_id',
+                'status_id',
+                'landlord_type',
+            ])
+            ->orderBy('name', 'asc')
+            ->get()
+            ->map(function ($s) use ($isVGreen) {
+                return [
+                    'id' => $s->id,
+                    'code' => $s->code,
+                    'name' => $s->name,
+                    'province' => $s->province,
+                    'city' => $s->city,
+                    'facility_type_id' => $s->facility_type_id,
+                    'status_id' => $s->status_id,
+                    'landlord_type' => $isVGreen ? null : $s->landlord_type,
+                ];
+            });
+
         return Inertia::render($viewName, [
             'stations' => $projectedStations,
+            'stationFilterLookups' => $stationFilterLookups,
             'stats' => $stats,
             'monthlyRolloutData' => $monthlyRolloutData,
             'provinceTargets' => $provinceTargets,
@@ -584,10 +627,10 @@ class StationController extends Controller
         $isVGreen = $user && $user->role_id === Role::VGREEN_REP;
 
         if ($isVGreen) {
-            $latest = $station->latestInspection;
-            if ($station->status_id !== StationStatus::OPERATIONAL || !$latest || $latest->approval_status_id !== ApprovalStatus::APPROVED) {
-                abort(403, 'Akses terbatas untuk perwakilan V-Green.');
-            }
+            $station->load([
+                'latestInspection.photos.slot',
+            ]);
+            return response()->json(StationProjection::projectPhotos($station, $isVGreen));
         }
 
         $station->load([
@@ -1044,5 +1087,85 @@ class StationController extends Controller
         } catch (\Throwable $e) {
             return [];
         }
+    }
+
+    /**
+     * Reverse geocode coordinates into address, postal code, city, and province in Indonesia.
+     */
+    public function reverseLocation(Request $request)
+    {
+        $lat = (float) $request->input('lat');
+        $lon = (float) $request->input('lon');
+
+        if ($lat < -12.0 || $lat > 7.0 || $lon < 94.0 || $lon > 142.0) {
+            return response()->json([
+                'display_name' => '',
+                'address' => '',
+                'road' => '',
+                'city' => '',
+                'province' => '',
+                'postal_code' => '',
+            ]);
+        }
+
+        $cacheKey = 'geo_reverse_' . md5(round($lat, 5) . '_' . round($lon, 5));
+
+        $data = Cache::remember($cacheKey, 86400, function () use ($lat, $lon) {
+            try {
+                $response = Http::timeout(5)
+                    ->withHeaders([
+                        'User-Agent' => 'VGreen-SSI-Platform/1.0 (contact@vgreen-ssi.com)',
+                        'Accept-Language' => 'id,en',
+                    ])
+                    ->get('https://nominatim.openstreetmap.org/reverse', [
+                        'lat' => $lat,
+                        'lon' => $lon,
+                        'format' => 'json',
+                        'addressdetails' => 1,
+                    ]);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    $addr = $json['address'] ?? [];
+                    $city = $addr['city'] ?? $addr['county'] ?? $addr['town'] ?? $addr['city_district'] ?? '';
+                    $province = $addr['state'] ?? '';
+                    $postcode = $addr['postcode'] ?? '';
+                    $road = $addr['road'] ?? '';
+
+                    $parts = array_filter([
+                        $road,
+                        $addr['village'] ?? $addr['suburb'] ?? $addr['neighbourhood'] ?? null,
+                        $addr['municipality'] ?? $addr['city_district'] ?? null,
+                        $city,
+                        $province,
+                        $postcode,
+                    ]);
+
+                    return [
+                        'display_name' => $json['display_name'] ?? implode(', ', $parts),
+                        'address' => implode(', ', $parts),
+                        'road' => $road,
+                        'city' => $city,
+                        'province' => $province,
+                        'postal_code' => $postcode,
+                        'village' => $addr['village'] ?? $addr['suburb'] ?? '',
+                        'district' => $addr['municipality'] ?? '',
+                    ];
+                }
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            return [
+                'display_name' => '',
+                'address' => '',
+                'road' => '',
+                'city' => '',
+                'province' => '',
+                'postal_code' => '',
+            ];
+        });
+
+        return response()->json($data);
     }
 }

@@ -81,8 +81,8 @@ export default function MasterDataIndex({
     const [selectedMachineForDetail, setSelectedMachineForDetail] = useState<MasterMachine | null>(null);
 
     // Action dropdown states
-    const [openMachineDropdownId, setOpenMachineDropdownId] = useState<number | null>(null);
-    const [openCategoryDropdownId, setOpenCategoryDropdownId] = useState<number | null>(null);
+    const [openMachineDropdownId, setOpenMachineDropdownId] = useState<string | null>(null);
+    const [openCategoryDropdownId, setOpenCategoryDropdownId] = useState<string | null>(null);
 
     // Restricted warning modal state
     const [restrictedModalState, setRestrictedModalState] = useState<{
@@ -618,9 +618,9 @@ export default function MasterDataIndex({
                                                                 </span>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => router.visit(route('gis.index', { machine_id: m.id }))}
+                                                                    onClick={() => handleOpenDetailMachine(m)}
                                                                     className="font-bold text-slate-900 hover:text-blue-600 text-sm truncate max-w-[220px] text-left transition cursor-pointer"
-                                                                    title={`Lihat stasiun dengan ${m.name} di Peta GIS`}
+                                                                    title={`Klik untuk melihat detail spesifikasi ${m.name}`}
                                                                 >
                                                                     {m.name}
                                                                 </button>
@@ -702,10 +702,16 @@ export default function MasterDataIndex({
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => router.visit(route('gis.index', { machine_id: m.id }))}
-                                                                    className="w-full px-3.5 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-50/80 flex items-center gap-2 transition"
+                                                                    disabled={(m.station_machines_count ?? 0) === 0}
+                                                                    className={`w-full px-3.5 py-2 text-xs font-semibold flex items-center gap-2 transition ${
+                                                                        (m.station_machines_count ?? 0) > 0
+                                                                            ? 'text-blue-700 hover:bg-blue-50/80 cursor-pointer'
+                                                                            : 'text-slate-400 opacity-60 cursor-not-allowed'
+                                                                    }`}
+                                                                    title={(m.station_machines_count ?? 0) === 0 ? 'Belum ada stasiun yang menggunakan mesin ini (0 Titik)' : `Lihat ${m.station_machines_count} titik di Peta GIS`}
                                                                 >
                                                                     <MapPin className="w-3.5 h-3.5 text-blue-600" />
-                                                                    <span>Lihat di Peta GIS</span>
+                                                                    <span>Lihat di Peta GIS {(m.station_machines_count ?? 0) === 0 ? '(0 Titik)' : ''}</span>
                                                                 </button>
 
                                                                 <div className="my-1 border-t border-slate-100" />

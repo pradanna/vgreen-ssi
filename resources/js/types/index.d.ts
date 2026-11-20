@@ -1,5 +1,5 @@
 export interface User {
-    id: number;
+    id: string;
     name: string;
     email: string;
     role_id: 'DIRECTOR_SSI' | 'ADMIN_SSI' | 'VGREEN_REP' | 'FIELD_VENDOR' | 'CONSTRUCTION_TEAM';
@@ -19,5 +19,6 @@ export type PageProps<
     auth: {
         user: User;
     };
+    pendingInspectionCount?: number;
     googleMapsApiKey?: string;
 };

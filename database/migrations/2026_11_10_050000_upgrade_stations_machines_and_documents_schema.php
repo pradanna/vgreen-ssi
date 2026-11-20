@@ -35,8 +35,8 @@ return new class extends Migration
 
         // 2. Station Machines (1 Station -> Multiple Charging Units/BSS Cabinets)
         Schema::create('station_machines', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('station_id')->constrained('stations')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('station_id')->constrained('stations')->cascadeOnDelete();
             $table->string('name', 150); // e.g. "Unit DC Fast Charger 01"
             $table->string('brand', 100)->default('Autel'); // Autel, Delta, ABB, Starcharge, V-Green
             $table->string('model_series', 100)->nullable(); // e.g. "MaxiCharger DC 120kW"
@@ -57,8 +57,8 @@ return new class extends Migration
 
         // 3. Station Legal & Contract Documents
         Schema::create('station_documents', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('station_id')->constrained('stations')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('station_id')->constrained('stations')->cascadeOnDelete();
             $table->string('category', 30); // SWASTA, PEMERINTAH, VENDOR
             $table->string('document_type', 50); // SHM, KTP, SURAT_PERSETUJUAN, LOI, PINJAM_PAKAI, MOU, KWITANSI, BUKTI_BAYAR, SK, SSR_VENDOR, LAPORAN_SURVEY
             $table->string('title', 255);
@@ -66,7 +66,7 @@ return new class extends Migration
             $table->string('file_name', 255)->nullable();
             $table->integer('file_size')->nullable(); // in bytes
             $table->string('mime_type', 100)->nullable();
-            $table->foreignId('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->text('notes')->nullable();
             $table->timestamps();
 

@@ -20,7 +20,7 @@ export interface StationStatus {
 }
 
 export interface PhotoItem {
-    id?: number;
+    id?: string;
     slot_id: string;
     slot_label: string;
     category: 'LAHAN' | 'MESIN' | 'PANEL_TIANG';
@@ -34,7 +34,7 @@ export interface PhotoItem {
 }
 
 export interface InspectionData {
-    id: number;
+    id: string;
     stage: string;
     approval_status_id: ApprovalStatusId;
     approval_status_name?: string;
@@ -48,7 +48,7 @@ export interface InspectionData {
 }
 
 export interface MachineCategory {
-    id: number;
+    id: string;
     code: string; // EVCS, BSS
     name: string;
     description?: string;
@@ -58,8 +58,8 @@ export interface MachineCategory {
 }
 
 export interface MasterMachine {
-    id: number;
-    category_id: number;
+    id: string;
+    category_id: string;
     category?: MachineCategory;
     code: string;
     name: string;
@@ -83,9 +83,9 @@ export interface MasterMachine {
 }
 
 export interface StationMachine {
-    id?: number;
-    station_id?: number;
-    machine_id?: number;
+    id?: string;
+    station_id?: string;
+    machine_id?: string;
     machine?: MasterMachine;
     name: string;
     brand?: string;
@@ -102,7 +102,7 @@ export interface StationMachine {
 }
 
 export interface StationDocument {
-    id: number;
+    id: string;
     category: DocumentCategory;
     document_type: string;
     title: string;
@@ -128,7 +128,7 @@ export interface DocumentCompliance {
 }
 
 export interface Station {
-    id: number;
+    id: string;
     code: string;
     name: string;
     facility_type_id: FacilityTypeId;
@@ -185,7 +185,7 @@ export interface Station {
 }
 
 export interface ExpiringLeaseItem {
-    id: number;
+    id: string;
     code: string;
     name: string;
     city?: string;
@@ -205,6 +205,8 @@ export interface MonthlyRolloutPoint {
 export interface StatsSummary {
     total: number;
     national_target?: number;
+    national_target_evcs?: number;
+    national_target_bss?: number;
     operational: number;
     construction: number;
     construction_evcs?: number;
@@ -236,7 +238,7 @@ export interface StatsSummary {
 }
 
 export interface ProvinceTargetItem {
-    id: number;
+    id: string;
     province_name: string;
     region: string;
     year: number;
@@ -262,4 +264,36 @@ export interface TargetSummary {
     total_in_construction: number;
     national_progress_percentage: number;
     selected_year: number;
+}
+
+export type ActivityModule = 'STATION' | 'DOCUMENT' | 'INSPECTION' | 'TARGET' | 'MASTER_DATA' | 'AUTH';
+
+export interface ActivityLogItem {
+    id: string;
+    user_id?: string;
+    user?: {
+        id: string;
+        name: string;
+        email: string;
+        role_id: string;
+    };
+    module: ActivityModule;
+    action: string;
+    subject_type?: string;
+    subject_id?: string;
+    subject_name?: string;
+    description: string;
+    properties?: Record<string, any>;
+    ip_address?: string;
+    user_agent?: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ActivityLogStats {
+    total_today: number;
+    stations_count: number;
+    documents_count: number;
+    inspections_count: number;
+    total_all: number;
 }

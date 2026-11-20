@@ -2,6 +2,7 @@
 
 namespace App\Domain\Station\Actions;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Domain\GIS\GeoCoordinate;
 use App\Models\FacilityType;
 use App\Models\Station;
@@ -180,6 +181,20 @@ class ImportStationsAction
         }
 
         fclose($handle);
+
+        if ($importedCount > 0 || count($errors) > 0) {
+            ActivityLogger::log(
+                module: 'STATION',
+                action: 'STATIONS_IMPORTED',
+                description: "Impor massal stasiun via CSV: {$importedCount} berhasil diproses, " . count($errors) . " gagal",
+                subject: null,
+                properties: [
+                    'imported_count' => $importedCount,
+                    'failed_count' => count($errors),
+                    'sample_codes' => array_slice(array_map(fn($s) => $s->code, $importedStations), 0, 5),
+                ]
+            );
+        }
 
         return [
             'success' => count($errors) === 0,

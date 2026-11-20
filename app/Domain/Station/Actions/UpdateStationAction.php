@@ -2,6 +2,7 @@
 
 namespace App\Domain\Station\Actions;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Domain\GIS\GeoCoordinate;
 use App\Models\FacilityType;
 use App\Models\Station;
@@ -95,7 +96,31 @@ class UpdateStationAction
             unset($data['machines']);
         }
 
+        $original = $station->getOriginal();
         $station->update($data);
+
+        // Calculate diff for audit trail
+        $changes = $station->getChanges();
+        unset($changes['updated_at']);
+        if (!empty($changes)) {
+            $oldValues = [];
+            $newValues = [];
+            foreach ($changes as $key => $newVal) {
+                $oldValues[$key] = $original[$key] ?? null;
+                $newValues[$key] = $newVal;
+            }
+            ActivityLogger::log(
+                module: 'STATION',
+                action: 'STATION_UPDATED',
+                description: "Memperbarui data stasiun {$station->code} - {$station->name} (" . implode(', ', array_keys($changes)) . ")",
+                subject: $station,
+                properties: [
+                    'old_values' => $oldValues,
+                    'new_values' => $newValues,
+                    'changed_fields' => array_keys($changes),
+                ]
+            );
+        }
 
         // Update document status cache
         $compliance = $station->document_compliance;

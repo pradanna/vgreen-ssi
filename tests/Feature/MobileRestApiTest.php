@@ -385,4 +385,110 @@ class MobileRestApiTest extends TestCase
         $this->assertEquals('BAIK', $report->overall_condition);
         $this->assertNull($report->rejection_reason);
     }
+
+    /**
+     * Validation errors return clear Indonesian messages for mobile app display.
+     */
+    public function test_validation_errors_return_clear_indonesian_messages(): void
+    {
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->postJson(route('api.v1.stations.inspections.store', ['station' => $this->station->id]), [
+                // missing stage
+                'latitude' => 99.0, // out of range
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'errors',
+            ]);
+
+        $this->assertFalse($response->json('success'));
+        $this->assertStringContainsString('Tahapan inspeksi wajib dipilih', $response->json('message'));
+        $this->assertArrayHasKey('stage', $response->json('errors'));
+        $this->assertArrayHasKey('latitude', $response->json('errors'));
+    }
+
+    /**
+     * Resubmit fails with clear Indonesian message when report is already approved.
+     */
+    public function test_resubmit_fails_when_report_already_approved(): void
+    {
+        $report = InspectionReport::create([
+            'station_id' => $this->station->id,
+            'submitted_by' => $this->surveyor->id,
+            'approval_status_id' => ApprovalStatus::APPROVED,
+            'stage' => 'CONSTRUCTION_PROGRESS',
+            'overall_condition' => 'BAIK',
+            'submitted_at' => now()->subDay(),
+        ]);
+
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->postJson(route('api.v1.inspections.resubmit', ['report' => $report->id]), [
+                'overall_condition' => 'BAIK',
+            ]);
+
+        $response->assertStatus(400)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Laporan inspeksi ini sudah disetujui (APPROVED) dan tidak dapat direvisi kembali.',
+            ]);
+    }
+
+    /**
+     * Non-owner vendor cannot resubmit other vendor report.
+     */
+    public function test_unauthorized_vendor_cannot_resubmit_other_vendor_report(): void
+    {
+        $otherVendor = User::where('role_id', Role::CONSTRUCTION_TEAM)->first();
+
+        $report = InspectionReport::create([
+            'station_id' => $this->station->id,
+            'submitted_by' => $otherVendor->id,
+            'approval_status_id' => ApprovalStatus::REVISION_REQUIRED,
+            'stage' => 'CONSTRUCTION_PROGRESS',
+            'submitted_at' => now(),
+        ]);
+
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->postJson(route('api.v1.inspections.resubmit', ['report' => $report->id]), [
+                'overall_condition' => 'BAIK',
+            ]);
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Anda tidak memiliki hak akses untuk merevisi laporan ini.',
+            ]);
+    }
+
+    /**
+     * Non-existent station returns standard Indonesian 404 message.
+     */
+    public function test_not_found_returns_clean_indonesian_message(): void
+    {
+        $response = $this->actingAs($this->surveyor, 'sanctum')
+            ->getJson('/api/v1/stations/999999');
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Data titik stasiun atau laporan inspeksi tidak ditemukan.',
+            ]);
+    }
+
+    /**
+     * Unauthenticated request returns standard Indonesian 401 message.
+     */
+    public function test_unauthenticated_request_returns_clean_indonesian_message(): void
+    {
+        $response = $this->getJson(route('api.v1.assignments'));
+
+        $response->assertStatus(401)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Sesi login telah berakhir atau token tidak valid. Silakan login kembali.',
+            ]);
+    }
 }

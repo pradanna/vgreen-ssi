@@ -14,6 +14,7 @@ use App\Models\StationStatus;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class StationSeeder extends Seeder
 {
@@ -1082,6 +1083,7 @@ class StationSeeder extends Seeder
 
                     foreach ($mockPhotoSamples as $slotId => $photoUrl) {
                         $photosBatch[] = [
+                            'id' => (string) Str::uuid7(),
                             'report_id' => $report->id,
                             'checklist_slot_id' => $slotId,
                             'photo_url' => $photoUrl,
@@ -1096,6 +1098,8 @@ class StationSeeder extends Seeder
                     }
                 }
 
+                $cleanCode = str_replace([' ', '/', '-'], '', $station->code);
+
                 // --- B. Station Machines (Official Hardware) ---
                 if ($station->facility_type_id === FacilityType::EVCS) {
                     $mainMachine = $station->power_capacity_kw <= 20 
@@ -1103,12 +1107,13 @@ class StationSeeder extends Seeder
                         : ($station->power_capacity_kw <= 30 ? ($mVF30 ?? $mVF60) : ($mVF60 ?? $mVF30));
 
                     $machinesBatch[] = [
+                        'id' => (string) Str::uuid7(),
                         'station_id' => $station->id,
                         'machine_id' => $mainMachine?->id,
                         'name' => $mainMachine ? $mainMachine->name . ' 01' : 'Unit DC Fast Charger 01',
                         'brand' => 'VinFast',
                         'model_series' => $mainMachine ? $mainMachine->model_series : 'DC Commercial Dispenser',
-                        'serial_number' => 'VF-' . ($mainMachine ? $mainMachine->code : 'DC60') . '-' . str_pad($station->id, 5, '0', STR_PAD_LEFT) . '-01',
+                        'serial_number' => 'VF-' . ($mainMachine ? $mainMachine->code : 'DC60') . '-' . $cleanCode . '-01',
                         'facility_type_id' => FacilityType::EVCS,
                         'power_capacity_kw' => $mainMachine ? $mainMachine->power_capacity_kw : 60,
                         'socket_types' => $mainMachine ? $mainMachine->socket_types : '2x CCS2 Dual Gun (200A + 200A)',
@@ -1122,12 +1127,13 @@ class StationSeeder extends Seeder
                     if ($station->power_capacity_kw > 60) {
                         $secMachine = $station->power_capacity_kw >= 150 ? $mVF60 : ($station->power_capacity_kw >= 100 ? $mVF30 : $mVF20);
                         $machinesBatch[] = [
+                            'id' => (string) Str::uuid7(),
                             'station_id' => $station->id,
                             'machine_id' => $secMachine?->id,
                             'name' => $secMachine ? $secMachine->name . ' 02' : 'Unit DC Fast Charger 02',
                             'brand' => 'VinFast',
                             'model_series' => $secMachine ? $secMachine->model_series : 'DC Wallbox Series',
-                            'serial_number' => 'VF-' . ($secMachine ? $secMachine->code : 'DC30') . '-' . str_pad($station->id, 5, '0', STR_PAD_LEFT) . '-02',
+                            'serial_number' => 'VF-' . ($secMachine ? $secMachine->code : 'DC30') . '-' . $cleanCode . '-02',
                             'facility_type_id' => FacilityType::EVCS,
                             'power_capacity_kw' => $secMachine ? $secMachine->power_capacity_kw : 30,
                             'socket_types' => $secMachine ? $secMachine->socket_types : '1x CCS2 Fast Gun (80A)',
@@ -1141,12 +1147,13 @@ class StationSeeder extends Seeder
                 } elseif ($station->facility_type_id === FacilityType::BSS) {
                     $chosenBss = ($station->slot_count && $station->slot_count <= 8) ? ($mBSS6 ?? $mBSS12) : ($mBSS12 ?? $mBSS6);
                     $machinesBatch[] = [
+                        'id' => (string) Str::uuid7(),
                         'station_id' => $station->id,
                         'machine_id' => $chosenBss?->id,
                         'name' => $chosenBss ? $chosenBss->name : 'V-Green BSS Cabinet 12-Slot',
                         'brand' => 'V-Green',
                         'model_series' => $chosenBss ? $chosenBss->model_series : 'Smart BSS Cabinet 12-Bay',
-                        'serial_number' => 'VG-BSS-' . str_pad($station->id, 5, '0', STR_PAD_LEFT) . '-01',
+                        'serial_number' => 'VG-BSS-' . $cleanCode . '-01',
                         'facility_type_id' => FacilityType::BSS,
                         'power_capacity_kw' => $chosenBss ? $chosenBss->power_capacity_kw : 10,
                         'socket_types' => $chosenBss ? $chosenBss->socket_types : '12 Battery Slots (11 Active LFP + 1 Swap Bay)',
@@ -1158,12 +1165,13 @@ class StationSeeder extends Seeder
                     ];
                 } else { // COMBINED
                     $machinesBatch[] = [
+                        'id' => (string) Str::uuid7(),
                         'station_id' => $station->id,
                         'machine_id' => $mVF60?->id,
                         'name' => 'Dispenser DC Fast Charger 01',
                         'brand' => 'VinFast',
                         'model_series' => 'DC Commercial Dispenser',
-                        'serial_number' => 'VF-DC60-' . str_pad($station->id, 5, '0', STR_PAD_LEFT) . '-01',
+                        'serial_number' => 'VF-DC60-' . $cleanCode . '-01',
                         'facility_type_id' => FacilityType::EVCS,
                         'power_capacity_kw' => 60,
                         'socket_types' => '2x CCS2 Dual Gun (200A + 200A)',
@@ -1174,12 +1182,13 @@ class StationSeeder extends Seeder
                         'updated_at' => now(),
                     ];
                     $machinesBatch[] = [
+                        'id' => (string) Str::uuid7(),
                         'station_id' => $station->id,
                         'machine_id' => $mBSS12?->id,
                         'name' => 'V-Green BSS Cabinet 12-Slot 02',
                         'brand' => 'V-Green',
                         'model_series' => 'Smart BSS Cabinet 12-Bay',
-                        'serial_number' => 'VG-BSS12-' . str_pad($station->id, 5, '0', STR_PAD_LEFT) . '-02',
+                        'serial_number' => 'VG-BSS12-' . $cleanCode . '-02',
                         'facility_type_id' => FacilityType::BSS,
                         'power_capacity_kw' => 10,
                         'socket_types' => '12 Battery Slots (11 Active LFP + 1 Swap Bay)',
@@ -1208,6 +1217,7 @@ class StationSeeder extends Seeder
 
                 foreach ($keysToSeed as $docKey) {
                     $documentsBatch[] = [
+                        'id' => (string) Str::uuid7(),
                         'station_id' => $station->id,
                         'category' => $station->landlord_type,
                         'document_type' => $docKey,
@@ -1225,6 +1235,7 @@ class StationSeeder extends Seeder
 
                 if (in_array($station->status_id, [StationStatus::OPERATIONAL, StationStatus::CONSTRUCTION])) {
                     $documentsBatch[] = [
+                        'id' => (string) Str::uuid7(),
                         'station_id' => $station->id,
                         'category' => 'VENDOR',
                         'document_type' => 'SSR_VENDOR',

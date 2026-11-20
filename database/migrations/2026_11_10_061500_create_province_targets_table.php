@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('province_targets', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('province_name');
             $table->string('region')->default('Jawa'); // Jawa, Sumatera, Kalimantan, Sulawesi, Bali-Nusra, Maluku-Papua
             $table->integer('year')->default(2026);

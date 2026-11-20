@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { 
     LayoutGrid, 
     MapPin, 
@@ -7,23 +7,28 @@ import {
     ShieldCheck, 
     Zap,
     Cpu,
-    Target
+    Target,
+    Activity
 } from 'lucide-react';
-import { User } from '@/types';
+import { User, PageProps } from '@/types';
 import { useSidebar } from '@/Contexts/SidebarContext';
 
 interface SidebarNavProps {
     user?: User;
-    activeNav?: 'dashboard' | 'stations' | 'gis' | 'inspections' | 'settings' | 'master-data' | 'targets';
+    activeNav?: 'dashboard' | 'stations' | 'gis' | 'inspections' | 'settings' | 'master-data' | 'targets' | 'activity-logs';
     pendingCount?: number;
 }
 
 export default function SidebarNav({
-    user,
+    user: propUser,
     activeNav = 'dashboard',
-    pendingCount = 0,
+    pendingCount: propPendingCount,
 }: SidebarNavProps) {
     const { isCollapsed } = useSidebar();
+    const { auth, pendingInspectionCount } = usePage<PageProps>().props;
+
+    const user = propUser || auth?.user;
+    const pendingCount = propPendingCount !== undefined ? propPendingCount : (pendingInspectionCount ?? 0);
 
     // Check if route matches or activeNav matches
     const isDashboardActive = activeNav === 'dashboard' || (typeof route === 'function' && route().current('dashboard'));
@@ -32,6 +37,7 @@ export default function SidebarNav({
     const isTargetsActive = activeNav === 'targets' || (typeof route === 'function' && route().current('targets.*'));
     const isInspectionsActive = activeNav === 'inspections' || (typeof route === 'function' && route().current('inspections.index'));
     const isMasterDataActive = activeNav === 'master-data' || (typeof route === 'function' && route().current('master-data.*'));
+    const isActivityLogsActive = activeNav === 'activity-logs' || (typeof route === 'function' && route().current('activity-logs.*'));
 
     const isSsiAdminOrDirector = user?.role_id === 'ADMIN_SSI' || user?.role_id === 'DIRECTOR_SSI';
     const isVGreen = user?.role_id === 'VGREEN_REP';
@@ -63,10 +69,10 @@ export default function SidebarNav({
 
             {/* Navigation Menu Links */}
             <nav className={`flex-1 space-y-1.5 overflow-y-auto ${isCollapsed ? 'px-2' : 'px-4'}`}>
-                {/* SECTION 1: MONITORING & GIS */}
+                {/* SECTION 1: MONITORING & PETA */}
                 {!isCollapsed && (
                     <div className="px-3 pt-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 select-none">
-                        Monitoring & GIS
+                        Monitoring &amp; Peta
                     </div>
                 )}
 
@@ -106,10 +112,10 @@ export default function SidebarNav({
                     {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Titik Stasiun</span>}
                 </Link>
 
-                {/* 3. Peta GIS Nasional */}
+                {/* 3. Peta Stasiun */}
                 <Link
                     href={route('gis.index')}
-                    title={isCollapsed ? 'Peta GIS Nasional' : undefined}
+                    title={isCollapsed ? 'Peta Stasiun' : undefined}
                     className={`flex items-center rounded-2xl transition-all duration-150 ${
                         isCollapsed 
                             ? 'w-12 h-12 mx-auto justify-center' 
@@ -121,7 +127,7 @@ export default function SidebarNav({
                     }`}
                 >
                     <MapIcon className={`w-5 h-5 shrink-0 ${isGisActive ? 'text-blue-600' : 'text-slate-400'}`} />
-                    {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Peta GIS Nasional</span>}
+                    {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Peta Stasiun</span>}
                 </Link>
 
                 {/* SECTION 2: OPERASIONAL & QC (ATAU TARGET KEMITRAAN UNTUK V-GREEN) */}
@@ -211,6 +217,24 @@ export default function SidebarNav({
                         >
                             <Cpu className={`w-5 h-5 shrink-0 ${isMasterDataActive ? 'text-blue-600' : 'text-slate-400'}`} />
                             {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Master Data</span>}
+                        </Link>
+
+                        {/* Log Aktivitas & Audit Trail */}
+                        <Link
+                            href={route('activity-logs.index')}
+                            title={isCollapsed ? 'Log Aktivitas' : undefined}
+                            className={`flex items-center rounded-2xl transition-all duration-150 ${
+                                isCollapsed 
+                                    ? 'w-12 h-12 mx-auto justify-center' 
+                                    : 'w-full gap-3.5 px-4 py-3 text-sm'
+                            } ${
+                                isActivityLogsActive
+                                    ? 'bg-[#F4F5F8] text-slate-900 shadow-subtle font-semibold'
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 font-medium'
+                            }`}
+                        >
+                            <Activity className={`w-5 h-5 shrink-0 ${isActivityLogsActive ? 'text-blue-600' : 'text-slate-400'}`} />
+                            {!isCollapsed && <span className="whitespace-nowrap overflow-hidden">Log Aktivitas</span>}
                         </Link>
                     </>
                 )}

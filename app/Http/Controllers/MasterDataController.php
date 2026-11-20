@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Activity\Services\ActivityLogger;
 use App\Models\Machine;
 use App\Models\MachineCategory;
 use App\Models\Role;
@@ -72,7 +73,15 @@ class MasterDataController extends Controller
 
         $validated['code'] = strtoupper(trim($validated['code']));
 
-        MachineCategory::create($validated);
+        $category = MachineCategory::create($validated);
+
+        ActivityLogger::log(
+            module: 'MASTER_DATA',
+            action: 'CATEGORY_CREATED',
+            description: "Menambahkan kategori mesin baru {$category->code} - {$category->name}",
+            subject: $category,
+            properties: $validated
+        );
 
         return redirect()->back()->with('success', 'Kategori mesin baru berhasil ditambahkan.');
     }
@@ -94,6 +103,14 @@ class MasterDataController extends Controller
 
         $category->update($validated);
 
+        ActivityLogger::log(
+            module: 'MASTER_DATA',
+            action: 'CATEGORY_UPDATED',
+            description: "Memperbarui kategori mesin {$category->code} - {$category->name}",
+            subject: $category,
+            properties: $validated
+        );
+
         return redirect()->back()->with('success', 'Data kategori mesin berhasil diperbarui.');
     }
 
@@ -110,7 +127,18 @@ class MasterDataController extends Controller
             ]);
         }
 
+        $code = $category->code;
+        $name = $category->name;
         $category->delete();
+
+        ActivityLogger::log(
+            module: 'MASTER_DATA',
+            action: 'CATEGORY_DELETED',
+            description: "Menghapus kategori mesin {$code} - {$name}",
+            subject: null,
+            properties: ['code' => $code, 'name' => $name],
+            subjectNameOverride: "{$code} - {$name}"
+        );
 
         return redirect()->back()->with('success', 'Kategori mesin berhasil dihapus.');
     }
@@ -142,7 +170,15 @@ class MasterDataController extends Controller
             'is_active' => 'boolean',
         ]);
 
-        Machine::create($validated);
+        $machine = Machine::create($validated);
+
+        ActivityLogger::log(
+            module: 'MASTER_DATA',
+            action: 'MACHINE_CREATED',
+            description: "Menambahkan model mesin {$machine->brand} {$machine->name} ({$machine->power_capacity_kw} kW)",
+            subject: $machine,
+            properties: $validated
+        );
 
         return redirect()->back()->with('success', 'Model mesin baru berhasil ditambahkan ke katalog master.');
     }
@@ -176,6 +212,14 @@ class MasterDataController extends Controller
 
         $machine->update($validated);
 
+        ActivityLogger::log(
+            module: 'MASTER_DATA',
+            action: 'MACHINE_UPDATED',
+            description: "Memperbarui data mesin {$machine->brand} {$machine->name}",
+            subject: $machine,
+            properties: $validated
+        );
+
         return redirect()->back()->with('success', 'Data model mesin berhasil diperbarui.');
     }
 
@@ -193,7 +237,18 @@ class MasterDataController extends Controller
             ]);
         }
 
+        $code = $machine->code;
+        $name = $machine->name;
         $machine->delete();
+
+        ActivityLogger::log(
+            module: 'MASTER_DATA',
+            action: 'MACHINE_DELETED',
+            description: "Menghapus mesin {$code} - {$name}",
+            subject: null,
+            properties: ['code' => $code, 'name' => $name],
+            subjectNameOverride: "{$code} - {$name}"
+        );
 
         return redirect()->back()->with('success', 'Model mesin berhasil dihapus dari katalog master.');
     }

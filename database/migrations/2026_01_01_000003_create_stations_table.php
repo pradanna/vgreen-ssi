@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('stations', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('code', 50)->unique(); // VG-JKT-001, etc.
             $table->string('name', 255);
             $table->string('facility_type_id', 30); // EVCS, BSS, COMBINED

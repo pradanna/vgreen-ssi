@@ -91,8 +91,8 @@ export default function GoogleMapView({
     const mapInstanceRef = useRef<L.Map | null>(null);
     const markersLayerRef = useRef<L.LayerGroup | null>(null);
     const activeTileLayerRef = useRef<L.TileLayer | null>(null);
-    const markersMapRef = useRef<Map<number, { marker: L.Marker; station: Station }>>(new Map());
-    const prevSelectedIdRef = useRef<number | null>(null);
+    const markersMapRef = useRef<Map<string, { marker: L.Marker; station: Station }>>(new Map());
+    const prevSelectedIdRef = useRef<string | null>(null);
     const prevStationsCountRef = useRef<number>(stations.length);
     const isFirstFilterRef = useRef<boolean>(true);
 

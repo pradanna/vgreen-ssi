@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Station, PhotoItem, InspectionData, StationDocument, StationMachine } from '@/types/station';
+import { Station, PhotoItem, InspectionData, StationDocument, StationMachine, ActivityLogItem } from '@/types/station';
 import { useForm, router } from '@inertiajs/react';
 import { 
     X, 
@@ -36,9 +36,13 @@ import {
     Phone,
     FilePlus,
     Layers,
-    Loader2
+    Loader2,
+    Hammer,
+    Activity,
+    MessageCircle
 } from 'lucide-react';
 import { compressImage, getCurrentDeviceLocation } from '@/utils/imageCompression';
+import { formatWhatsAppUrl } from '@/utils/whatsapp';
 
 interface StationDetailDrawerProps {
     station: Station | null;
@@ -82,18 +86,46 @@ export default function StationDetailDrawer({
     };
 
     // On-Demand Data Caching for Photos and Documents (Lazy Loading by Tab)
-    const [photosCache, setPhotosCache] = useState<Record<number, {
+    const [photosCache, setPhotosCache] = useState<Record<string, {
         latest_inspection?: InspectionData | null;
         inspections_history?: InspectionData[];
         verified_photos?: PhotoItem[];
     }>>({});
     const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
 
-    const [docsCache, setDocsCache] = useState<Record<number, {
+    const [docsCache, setDocsCache] = useState<Record<string, {
         documents: StationDocument[];
         document_compliance?: any;
     }>>({});
     const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+
+    // On-demand Activity Log cache for TIMELINE tab
+    const [activitiesCache, setActivitiesCache] = useState<Record<string, ActivityLogItem[]>>({});
+    const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+
+    // Fetch Station Activities on-demand when TIMELINE tab is opened
+    useEffect(() => {
+        if (!station || !isInternal) return;
+        const alreadyLoaded = (activitiesCache[station.id]?.length ?? 0) > 0;
+        if (activeTab === 'TIMELINE' && !alreadyLoaded && !isLoadingActivities) {
+            setIsLoadingActivities(true);
+            axios.get(`/stations/${station.id}/activities`)
+                .then(res => {
+                    if (res.data?.data) {
+                        setActivitiesCache(prev => ({
+                            ...prev,
+                            [station.id]: res.data.data,
+                        }));
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load station activities', err);
+                })
+                .finally(() => {
+                    setIsLoadingActivities(false);
+                });
+        }
+    }, [station?.id, activeTab, isInternal]);
 
     // Fetch Documents on-demand when DOCUMENTS tab is opened
     useEffect(() => {
@@ -153,7 +185,7 @@ export default function StationDetailDrawer({
         || (station?.inspections_history && station.inspections_history.length > 0 ? station.inspections_history : [])
         || (station?.latest_inspection ? [station.latest_inspection] : []);
 
-    const [selectedInspectionId, setSelectedInspectionId] = useState<number | null>(
+    const [selectedInspectionId, setSelectedInspectionId] = useState<string | null>(
         cachedPhotosData?.latest_inspection?.id || station?.latest_inspection?.id || (inspectionHistory[0]?.id ?? null)
     );
 
@@ -192,7 +224,7 @@ export default function StationDetailDrawer({
         ? station.machines
         : station ? [
             {
-                id: 1,
+                id: 'mock-machine-1',
                 name: station.facility_type_id === 'BSS' ? 'Kabinet BSS Swap Motor 01' : 'Unit DC Fast Charger 01',
                 brand: station.facility_type_id === 'BSS' ? 'V-Green BSS' : 'Autel',
                 model_series: station.facility_type_id === 'BSS' ? 'BSS Gen-3 8-Slot' : 'MaxiCharger DC 120kW',
@@ -343,7 +375,7 @@ export default function StationDetailDrawer({
         });
     };
 
-    const handleDeleteDoc = (docId: number, title: string) => {
+    const handleDeleteDoc = (docId: string, title: string) => {
         const currentStation = station;
         if (!currentStation) return;
         if (!confirm(`Hapus dokumen "${title}"?`)) return;
@@ -571,14 +603,39 @@ export default function StationDetailDrawer({
                     {activeTab === 'OVERVIEW' && (
                         <>
                             {isVGreen && (
-                                <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-100 flex items-start gap-3.5">
-                                    <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                                <div className={`p-4 rounded-2xl flex items-start gap-3.5 border ${
+                                    station.status_id === 'OPERATIONAL'
+                                        ? 'bg-emerald-50/80 border-emerald-100 text-emerald-900'
+                                        : station.status_id === 'CONSTRUCTION'
+                                        ? 'bg-orange-50/80 border-orange-100 text-orange-900'
+                                        : station.status_id === 'SURVEYED'
+                                        ? 'bg-amber-50/80 border-amber-100 text-amber-900'
+                                        : 'bg-rose-50/80 border-rose-100 text-rose-900'
+                                }`}>
+                                    {station.status_id === 'OPERATIONAL' && <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />}
+                                    {station.status_id === 'CONSTRUCTION' && <Hammer className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />}
+                                    {station.status_id === 'SURVEYED' && <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />}
+                                    {station.status_id === 'ON_HOLD' && <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />}
                                     <div>
-                                        <div className="font-bold text-emerald-900 text-xs">
-                                            Data Resmi Terverifikasi V-Green
+                                        <div className="font-bold text-xs">
+                                            {station.status_id === 'OPERATIONAL' && 'Data Resmi Terverifikasi V-Green (Operasional Aktif)'}
+                                            {station.status_id === 'CONSTRUCTION' && 'Progres Lapangan: Tahap Pembangunan (Konstruksi)'}
+                                            {station.status_id === 'SURVEYED' && 'Progres Lapangan: Tahap Survei Kelayakan Lokasi'}
+                                            {station.status_id === 'ON_HOLD' && 'Status Titik: On Hold / Penundaan Teknis'}
                                         </div>
-                                        <div className="text-[11px] text-emerald-700/90 mt-0.5 leading-relaxed">
-                                            Spesifikasi teknis dan koordinat geolokasi titik ini telah divalidasi oleh tim inspektur PT SSI.
+                                        <div className={`text-[11px] mt-0.5 leading-relaxed ${
+                                            station.status_id === 'OPERATIONAL'
+                                                ? 'text-emerald-700/90'
+                                                : station.status_id === 'CONSTRUCTION'
+                                                ? 'text-orange-700/90'
+                                                : station.status_id === 'SURVEYED'
+                                                ? 'text-amber-700/90'
+                                                : 'text-rose-700/90'
+                                        }`}>
+                                            {station.status_id === 'OPERATIONAL' && 'Spesifikasi teknis dan koordinat geolokasi titik ini telah divalidasi oleh tim inspektur PT SSI.'}
+                                            {station.status_id === 'CONSTRUCTION' && 'Titik stasiun sedang dalam pengerjaan instalasi fisik mesin dan infrastruktur listrik oleh PT SSI.'}
+                                            {station.status_id === 'SURVEYED' && 'Lokasi telah disurvei awal dan sedang dalam perencanaan teknis penggelaran.'}
+                                            {station.status_id === 'ON_HOLD' && 'Pekerjaan di titik ini sementara ditangguhkan menunggu evaluasi perizinan atau teknis.'}
                                         </div>
                                     </div>
                                 </div>
@@ -707,7 +764,7 @@ export default function StationDetailDrawer({
                                         <div className="flex items-center justify-between">
                                             <span className="text-slate-500">Nomor Dokumen Kontrak:</span>
                                             <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60 text-[11px]">
-                                                {station.contract_vgreen_doc_number || `PKS/VG-SSI/2025/${String(station.id).padStart(4, '0')}`}
+                                                {station.contract_vgreen_doc_number || `KTR/VG-SSI/2025/${String(station.id).padStart(4, '0')}`}
                                             </span>
                                         </div>
                                         <div className="flex items-center justify-between pt-2 border-t border-slate-200/60">
@@ -754,12 +811,16 @@ export default function StationDetailDrawer({
                                             <span className="text-slate-500">Nomor Telepon:</span>
                                             {station.landlord_phone ? (
                                                 <a 
-                                                    href={`https://wa.me/${station.landlord_phone.replace(/[^0-9]/g, '')}`} 
+                                                    href={formatWhatsAppUrl(
+                                                        station.landlord_phone,
+                                                        `Halo ${station.landlord_name ? `Bpk/Ibu ${station.landlord_name}` : 'Pemilik Lahan'}, kami dari tim operasional PT SSI mengenai stasiun ${station.name} (${station.code}).`
+                                                    )} 
                                                     target="_blank" 
                                                     rel="noopener noreferrer"
-                                                    className="text-emerald-600 hover:text-emerald-700 font-mono font-bold hover:underline flex items-center gap-1.5 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60"
+                                                    className="text-emerald-700 hover:text-emerald-800 font-mono font-bold hover:underline flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100/70 px-2.5 py-1 rounded-lg border border-emerald-200/80 transition"
+                                                    title="Hubungi via WhatsApp Web / App"
                                                 >
-                                                    <Phone className="w-3.5 h-3.5" />
+                                                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
                                                     <span>{station.landlord_phone}</span>
                                                 </a>
                                             ) : (
@@ -781,7 +842,7 @@ export default function StationDetailDrawer({
                                 </div>
                                 <h4 className="text-sm font-bold text-slate-800">Memuat Dokumen &amp; Legalitas...</h4>
                                 <p className="text-xs text-slate-400 max-w-xs mx-auto">
-                                    Mengambil data berkas PKS, IMB, dan kepatuhan perizinan stasiun secara langsung.
+                                    Mengambil data berkas Kontrak, IMB, dan kepatuhan perizinan stasiun secara langsung.
                                 </p>
                             </div>
                         ) : (
@@ -1038,7 +1099,7 @@ export default function StationDetailDrawer({
                                         {inspectionHistory.length > 1 ? (
                                             <select
                                                 value={selectedInspectionId || ''}
-                                                onChange={(e) => setSelectedInspectionId(Number(e.target.value))}
+                                                onChange={(e) => setSelectedInspectionId(e.target.value)}
                                                 className="bg-white border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                             >
                                                 {inspectionHistory.map((ins) => (
@@ -1472,6 +1533,65 @@ export default function StationDetailDrawer({
                                                 </div>
                                             );
                                         })}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 3. STATION ACTIVITY AUDIT TRAIL */}
+                            <div>
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <Activity className="w-3.5 h-3.5 text-blue-600" />
+                                        Log Aktivitas &amp; Perubahan Titik Ini
+                                    </h3>
+                                    <span className="text-[11px] font-semibold text-slate-500">
+                                        Total: <strong className="text-slate-900">{(activitiesCache[station.id] || []).length} Entri</strong>
+                                    </span>
+                                </div>
+
+                                {isLoadingActivities ? (
+                                    <div className="py-8 text-center space-y-2 bg-[#F8FAFC] rounded-2xl border border-slate-200/80 animate-pulse">
+                                        <Loader2 className="w-5 h-5 text-blue-600 animate-spin mx-auto" />
+                                        <p className="text-xs text-slate-500 font-semibold">Memuat riwayat log stasiun...</p>
+                                    </div>
+                                ) : (activitiesCache[station.id] || []).length === 0 ? (
+                                    <div className="p-5 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                        Belum ada catatan log aktivitas khusus untuk titik stasiun ini.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2.5">
+                                        {(activitiesCache[station.id] || []).map((act, actIdx) => (
+                                            <div 
+                                                key={act.id || actIdx}
+                                                className="p-3.5 rounded-2xl bg-[#F8FAFC] border border-slate-200/80 space-y-2 shadow-2xs hover:border-blue-300 transition"
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-mono">
+                                                        {act.action}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                                                        <Clock className="w-3 h-3 text-slate-400" />
+                                                        {act.created_at ? new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(act.created_at)) : '-'}
+                                                    </span>
+                                                </div>
+
+                                                <p className="text-xs font-semibold text-slate-800 leading-relaxed">
+                                                    {act.description}
+                                                </p>
+
+                                                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200/60">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <span className="w-4 h-4 rounded-full bg-slate-200 text-slate-700 text-[9px] font-bold flex items-center justify-center">
+                                                            {act.user?.name ? act.user.name.charAt(0).toUpperCase() : 'S'}
+                                                        </span>
+                                                        <span className="font-medium text-slate-700 truncate max-w-[150px]">{act.user?.name || 'Sistem'}</span>
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-mono">
+                                                        {act.user?.role_id || 'SYSTEM'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>

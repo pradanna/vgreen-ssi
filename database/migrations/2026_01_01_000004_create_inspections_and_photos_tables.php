@@ -13,11 +13,11 @@ return new class extends Migration
     {
         // Laporan Inspeksi / Survei / Pembangunan Lapangan
         Schema::create('inspection_reports', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('station_id')->constrained('stations')->cascadeOnDelete();
-            $table->foreignId('submitted_by')->constrained('users')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('station_id')->constrained('stations')->cascadeOnDelete();
+            $table->foreignUuid('submitted_by')->constrained('users')->cascadeOnDelete();
             $table->string('approval_status_id', 30)->default('PENDING_REVIEW');
-            $table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
             
             $table->string('stage', 50)->default('SURVEY'); // SURVEY, CONSTRUCTION, COMMISSIONING
             $table->text('notes')->nullable();
@@ -33,8 +33,8 @@ return new class extends Migration
 
         // 7 Sudut Foto Dokumentasi Terverifikasi
         Schema::create('inspection_photos', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('report_id')->constrained('inspection_reports')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('report_id')->constrained('inspection_reports')->cascadeOnDelete();
             $table->string('checklist_slot_id', 50); // LAHAN_DEPAN, MESIN_DEPAN, etc.
             
             $table->text('photo_url');

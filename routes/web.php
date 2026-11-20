@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\StationController;
@@ -22,6 +23,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/targets', [TargetController::class, 'store'])->name('targets.store');
     Route::put('/targets/{target}', [TargetController::class, 'update'])->name('targets.update');
 
+    // Centralized Activity Log & Audit Trail
+    Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+    Route::get('/stations/{station}/activities', [ActivityLogController::class, 'stationActivities'])->name('stations.activities');
+
     Route::post('/demo/switch-role', [StationController::class, 'switchRole'])->name('demo.switch-role');
     
     // Inspection Review & Web Submission
@@ -31,8 +36,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/stations/{station}/inspections/{report}/review', [StationController::class, 'reviewInspection'])->name('stations.inspections.review');
     Route::post('/stations/{station}/inspections', [StationController::class, 'submitInspection'])->name('stations.inspections.submit');
 
-    // Geolocations & POI Search
+    // Geolocations & POI Search / Reverse Geocoding
     Route::get('/geo/search', [StationController::class, 'searchLocation'])->name('geo.search');
+    Route::get('/geo/reverse', [StationController::class, 'reverseLocation'])->name('geo.reverse');
 
     // Milestone 5: Station Management & Data Portability (Admin PT SSI)
     Route::prefix('admin')->name('admin.')->group(function () {

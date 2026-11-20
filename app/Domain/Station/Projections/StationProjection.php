@@ -19,19 +19,7 @@ class StationProjection
         $isVGreen = $user && $user->role_id === Role::VGREEN_REP;
         $isField = $user && in_array($user->role_id, [Role::FIELD_VENDOR, Role::CONSTRUCTION_TEAM]);
 
-        return $stations->filter(function (Station $station) use ($isVGreen, $isField, $user) {
-            // V-Green Gate: only OPERATIONAL and latest inspection is APPROVED
-            if ($isVGreen) {
-                // If relation is eager loaded, verify it. Otherwise base SQL query in controller already scoped it.
-                if ($station->relationLoaded('latestInspection')) {
-                    $latest = $station->latestInspection;
-                    return $station->status_id === StationStatus::OPERATIONAL
-                        && $latest
-                        && $latest->approval_status_id === ApprovalStatus::APPROVED;
-                }
-                return $station->status_id === StationStatus::OPERATIONAL;
-            }
-
+        return $stations->filter(function (Station $station) use ($isField, $user) {
             // Field vendor: if assigned or matches vendor
             if ($isField && $user->organization) {
                 return true;

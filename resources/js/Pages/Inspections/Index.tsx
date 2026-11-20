@@ -217,7 +217,6 @@ export default function InspectionsIndex({
             <SidebarNav 
                 user={user} 
                 activeNav="inspections" 
-                pendingCount={stats.pending_count} 
             />
 
             {/* Main Content Area */}
@@ -460,68 +459,65 @@ export default function InspectionsIndex({
                                 </div>
 
                                 {/* Filter Row: Select2 dropdowns */}
-                                <div className="flex flex-wrap items-center gap-3 pt-2">
+                                <div className="flex flex-wrap items-center gap-2 pt-2">
                                     {/* Tahapan Sesi Filter */}
-                                    <div className="w-48">
-                                        <Select2
-                                            value={stageFilter}
-                                            onChange={(val) => {
-                                                const v = String(val);
-                                                setStageFilter(v);
-                                                applyFilters({ stage: v });
-                                            }}
-                                            options={[
-                                                { value: 'ALL', label: 'Semua Tahapan' },
-                                                { value: 'INITIAL_SURVEY', label: 'Survei Awal' },
-                                                { value: 'CONSTRUCTION_PROGRESS', label: 'Konstruksi Fisik' },
-                                                { value: 'COMMISSIONING', label: 'Komisioning (Uji Fungsi)' },
-                                                { value: 'ROUTINE_PERIODIC', label: 'Rutin Berkala' },
-                                            ]}
-                                            placeholder="Tahapan Sesi..."
-                                            size="sm"
-                                        />
-                                    </div>
+                                    <Select2
+                                        value={stageFilter}
+                                        onChange={(val) => {
+                                            const v = String(val);
+                                            setStageFilter(v);
+                                            applyFilters({ stage: v });
+                                        }}
+                                        options={[
+                                            { value: 'ALL', label: 'Semua Tahapan' },
+                                            { value: 'INITIAL_SURVEY', label: 'Survei Awal' },
+                                            { value: 'CONSTRUCTION_PROGRESS', label: 'Konstruksi Fisik' },
+                                            { value: 'COMMISSIONING', label: 'Komisioning (Uji Fungsi)' },
+                                            { value: 'ROUTINE_PERIODIC', label: 'Rutin Berkala' },
+                                        ]}
+                                        placeholder="Tahapan Sesi..."
+                                        size="sm"
+                                        variant="pill"
+                                    />
 
                                     {/* Provinsi Filter */}
-                                    <div className="w-52">
-                                        <Select2
-                                            value={selectedProvince}
-                                            onChange={(val) => {
-                                                const v = String(val);
-                                                setSelectedProvince(v);
-                                                setSelectedCity('ALL');
-                                                applyFilters({ province: v, city: 'ALL' });
-                                            }}
-                                            options={[
-                                                { value: 'ALL', label: 'Semua Provinsi' },
-                                                ...provinceList.map((p) => ({ value: p, label: p })),
-                                            ]}
-                                            placeholder="Pilih Provinsi..."
-                                            searchPlaceholder="Cari provinsi..."
-                                            prefixIcon={MapPin}
-                                            size="sm"
-                                        />
-                                    </div>
+                                    <Select2
+                                        value={selectedProvince}
+                                        onChange={(val) => {
+                                            const v = String(val);
+                                            setSelectedProvince(v);
+                                            setSelectedCity('ALL');
+                                            applyFilters({ province: v, city: 'ALL' });
+                                        }}
+                                        options={[
+                                            { value: 'ALL', label: 'Semua Provinsi' },
+                                            ...provinceList.map((p) => ({ value: p, label: p })),
+                                        ]}
+                                        placeholder="Pilih Provinsi..."
+                                        searchPlaceholder="Cari provinsi..."
+                                        prefixIcon={MapPin}
+                                        size="sm"
+                                        variant="pill"
+                                    />
 
                                     {/* Kota Filter (If province selected) */}
                                     {selectedProvince !== 'ALL' && availableCities.length > 0 && (
-                                        <div className="w-52">
-                                            <Select2
-                                                value={selectedCity}
-                                                onChange={(val) => {
-                                                    const v = String(val);
-                                                    setSelectedCity(v);
-                                                    applyFilters({ city: v });
-                                                }}
-                                                options={[
-                                                    { value: 'ALL', label: 'Semua Kota / Kab.' },
-                                                    ...availableCities.map((c) => ({ value: c, label: c })),
-                                                ]}
-                                                placeholder="Pilih Kota..."
-                                                searchPlaceholder="Cari kota..."
-                                                size="sm"
-                                            />
-                                        </div>
+                                        <Select2
+                                            value={selectedCity}
+                                            onChange={(val) => {
+                                                const v = String(val);
+                                                setSelectedCity(v);
+                                                applyFilters({ city: v });
+                                            }}
+                                            options={[
+                                                { value: 'ALL', label: 'Semua Kota / Kab.' },
+                                                ...availableCities.map((c) => ({ value: c, label: c })),
+                                            ]}
+                                            placeholder="Pilih Kota..."
+                                            searchPlaceholder="Cari kota..."
+                                            size="sm"
+                                            variant="pill"
+                                        />
                                     )}
 
                                     {/* Reset Filter Button */}
@@ -529,7 +525,7 @@ export default function InspectionsIndex({
                                         <button
                                             type="button"
                                             onClick={handleResetFilters}
-                                            className="h-9 px-3 rounded-xl border border-rose-200 bg-rose-50/60 text-rose-600 hover:bg-rose-100 text-xs font-bold flex items-center gap-1.5 transition ml-auto"
+                                            className="h-8 px-3 rounded-full border border-rose-200/80 bg-rose-50/70 hover:bg-rose-100 text-rose-600 text-xs font-bold flex items-center gap-1.5 transition shrink-0 cursor-pointer shadow-2xs"
                                             title="Reset semua filter"
                                         >
                                             <RotateCcw className="w-3.5 h-3.5" />
